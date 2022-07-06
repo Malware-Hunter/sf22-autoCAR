@@ -1,8 +1,10 @@
 import sys
+import os
 import argparse
+from termcolor import colored, cprint
 
-cbar_models = ['cba', 'cmar', 'cpar', 'eqar']
-ml_models = ['svm', 'rf']
+cbar_models = []
+ml_models = []
 models_type =  ['cbar', 'ml']
 
 def parse_args(argv):
@@ -11,7 +13,7 @@ def parse_args(argv):
     list_group.add_argument(
         '--list-models', nargs = '+', metavar = 'MODEL_TYPE',
         help = "Show List of Models and Exit. Choices: " + str(models_type),
-        choices = ['cbar','ml'], type = str)
+        choices = models_type, type = str)
     list_group.add_argument(
         '--list-models-all', help = 'Show List of All Models and Exit.',
         action = 'store_true')
@@ -104,31 +106,30 @@ def parse_args(argv):
     args = parser.parse_args(argv)
     return args
 
-def list_cbar_models():
-    print("Classification Models Based on Association Rules")
-    print("[cba] CBA: Classification Based on Association Rules")
-    print("[cmar] CMAR: Classification based on Multiple Class-Association Rules")
-    print("[cpar] CPAR: Classification based on Predictive Association Rules")
-    print("[eqar] EQAR: ECLAT and Qualify Rules")
-
-def list_ml_models():
-    print("Machine Learning Models")
-    print("[svm] SVM: Support Vector Machine")
-    print("[rf] RF: Random Forest")
-
 def list_models(models_to_list):
-    function_list = {
-        'cbar': list_cbar_models,
-        'ml': list_ml_models
-    }
     for m in models_to_list:
-        print("\n")
-        func = function_list[m]
-        func()
+        path_dir = os.path.join("./models", m)
+        models_in_dir = get_dirs_list(path_dir)
+        f = open(os.path.join(path_dir, "about.desc"), "r")
+        model_desc = f.read()
+        print(colored("\n>>> " + model_desc, 'green'))
+        for i in models_in_dir:
+            f = open(os.path.join(path_dir, i, "about.desc"), "r")
+            model_desc = f.read()
+            print(colored("\t" + model_desc, 'yellow'))
     exit(1)
 
+def get_dirs_list(path):
+    l = []
+    for it in os.scandir(path):
+        if it.is_dir():
+            l.append(it.name)
+    return l
 
 if __name__=="__main__":
+    cbar_models = get_dirs_list('./models/cbar')
+    ml_models = get_dirs_list('./models/ml')
+
     args = parse_args(sys.argv[1:])
     print(args)
 
@@ -136,5 +137,3 @@ if __name__=="__main__":
         list_models(args.list_models)
     elif args.list_models_all:
         list_models(models_type)
-
-    print("continuar")
