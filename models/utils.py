@@ -1,0 +1,46 @@
+from sklearn import metrics
+from sklearn.metrics import confusion_matrix
+import pandas as pd
+
+def format_result(result_df):
+    result = result_df.to_dict('records')[0]
+    if not result:
+        return "No Results."
+    result_str = "TP: {} TN: {} FP: {} FN: {}".format(result.get("tp"),result.get("tn"), result.get("fp"), result.get("fn"))
+    precision = result.get("precision") * 100.0
+    accuracy = result.get("accuracy") * 100.0
+    recall = result.get("recall") * 100.0
+    f1_score = result.get("f1_score") * 100.0
+    mcc = result.get("mcc")
+    roc_auc = result.get("roc_auc")
+    result_str += "\nAccuracy: {:.3f}".format(accuracy)
+    result_str += "\nPrecision: {:.3f}".format(precision) #Ability to Correctly Detect Malware
+    result_str += "\nRecall: {:.3f}".format(recall)
+    result_str += "\nF1 Score: {:.3f}".format(f1_score)
+    result_str += "\nMCC: {:.3f}".format(mcc)
+    result_str += "\nROC AuC: {:.3f}\n".format(roc_auc)
+    return result_str
+
+def result_dataframe(classification, prediction, num_rules = -1):
+    tn, fp, fn, tp = confusion_matrix(classification, prediction).ravel()
+    accuracy = metrics.accuracy_score(classification, prediction)
+    precision = metrics.precision_score(classification, prediction, zero_division = 0)
+    recall = metrics.recall_score(classification, prediction, zero_division = 0)
+    f1_score = metrics.f1_score(classification, prediction, zero_division = 0)
+    mcc = metrics.matthews_corrcoef(classification, prediction)
+    roc_auc = metrics.roc_auc_score(classification, prediction)
+    result_dict = {
+        "num_rules": [num_rules],
+        "tp": [tp],
+        "tn": [tn],
+        "fp": [fp],
+        "fn": [fn],
+        "accuracy": [accuracy],
+        "precision": [precision],
+        "recall": [recall],
+        "f1_score": [f1_score],
+        "mcc": [mcc],
+        "roc_auc": [roc_auc]
+    }
+    result_df = pd.DataFrame(result_dict)
+    return result_df
