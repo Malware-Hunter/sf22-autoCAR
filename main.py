@@ -1,7 +1,16 @@
 import sys
 import os
 import argparse
+import pandas as pd
 from termcolor import colored, cprint
+import models.cbar.cba.run as cba
+import models.cbar.cpar.run as cpar
+import models.cbar.cmar.run as cmar
+import models.cbar.eqar.run as eqar
+import models.ml.rf.run as rf
+import models.ml.svm.run as svm
+from models.utils import *
+from spinner import Spinner
 
 cbar_models = []
 ml_models = []
@@ -31,7 +40,7 @@ def parse_args(argv):
     dataset_group.add_argument(
         '--datasets-all', help = 'All Datasets (csv Files).',
         action = 'store_true')
-    cbar_group = parser.add_mutually_exclusive_group(required = not list_args)
+    cbar_group = parser.add_mutually_exclusive_group(required = False)
     cbar_group.add_argument(
         '--run-cbar', nargs = '+', metavar = 'CBAR',
         help = "Run Selected CBAR Models. Choices: " + str(cbar_models),
@@ -74,6 +83,15 @@ def parse_args(argv):
     group_eqar = parser.add_argument_group('Additional Parameters for EQAR')
     if cbar_complementar_args:
         group_eqar.add_argument(
+            '-a', '--algorithm', metavar = 'AR_ALGORITHM',
+            choices = ['apriori', 'fpgrowth', 'eclat'],
+            help = "Algorithm Used to Generate Association Rules. Default: eclat",
+            type = str, default = 'eclat')
+        group_eqar.add_argument(
+            '-l', '--min-lift', metavar = 'float',
+            help = 'Minimum lift. Default: 1.0.',
+            type = float, default = 1.0)
+        group_eqar.add_argument(
             '-t', '--threshold', metavar = 'float',
             help = 'Percentage of Rules to be Used for Testing Samples. Default: 0.1.',
             type = float, default = 0.1)
@@ -82,34 +100,35 @@ def parse_args(argv):
             '-q', '--qualify', metavar = 'QUALIFY', required = True,
             help = 'Metric for Rules Qualification. Choices: ' + str(q_list),
             choices = q_list, type = str)
+        group_eqar.add_argument(
+            '-o', '--overwrite', help = "Delete All Previous Data.",
+            action = "store_true")
+        group_eqar.add_argument(
+            '-u', '--use-proportional-values',
+            help = "Use Proportional Values to Support and Confidence.",
+            action = "store_true")
 
     group_output = parser.add_argument_group('Parameters for Output')
-    for m in cbar_models:
-        output_args =  any([x in (m, '--run-cbar-all') for x in argv])
-        if output_args:
-            argument = '--output-cbar-' + m
-            default_file = 'output_cbar_' + m + ".csv"
-            help_txt = "Output to CBAR " + m.upper() + " Results. Default: " + default_file
-            group_output.add_argument(
-                argument, metavar = 'CSV_FILE',
-                help = help_txt, type = str, default = default_file)
-    for m in ml_models:
-        output_args =  any([x in (m, '--run-ml-all') for x in argv])
-        if output_args:
-            argument = '--output-ml-' + m
-            default_file = 'output_ml_' + m + ".csv"
-            help_txt = "Output to ML " + m.upper() + " Results. Default: " + default_file
-            group_output.add_argument(
-                argument, metavar = 'CSV_FILE',
-                help = help_txt, type = str, default = default_file)
+    for m in models_type:
+        list_models = globals()[m + "_models"]
+        for l in list_models:
+            all = '--run-' + m + '-all'
+            output_args =  any([x in (l, all) for x in argv])
+            if output_args:
+                argument = '--output-' + m + '-' + l
+                default_file = 'output_' + m + '_' + l + ".csv"
+                help_txt = "Output to " + m.upper() + " " + l.upper() + " Results. Default: " + default_file
+                group_output.add_argument(
+                    argument, metavar = 'CSV_FILE',
+                    help = help_txt, type = str, default = default_file)
 
     args = parser.parse_args(argv)
     return args
 
-def list_models(models_to_list):
-    for m in models_to_list:
+def list_models(models_list):
+    for m in models_list:
         path_dir = os.path.join("./models", m)
-        models_in_dir = get_dirs_list(path_dir)
+        models_in_dir = get_dir_list(path_dir)
         f = open(os.path.join(path_dir, "about.desc"), "r")
         model_desc = f.read()
         print(colored("\n>>> " + model_desc, 'green'))
@@ -119,16 +138,39 @@ def list_models(models_to_list):
             print(colored("\t" + model_desc, 'yellow'))
     exit(1)
 
-def get_dirs_list(path):
+def get_dir_list(path):
     l = []
     for it in os.scandir(path):
         if it.is_dir():
             l.append(it.name)
     return l
 
+def get_datasets_list():
+    l = []
+    for it in os.scandir("./datasets"):
+        if it.is_file():
+            l.append(os.path.join("datasets", it.name))
+    return l
+
+def run_models(dataset, model_type, models_list, args):
+    for m in models_list:
+        print("Running Model", colored(m.upper(), 'green'),
+                "to Dataset ", colored(dataset, 'green'))
+
+        try:
+            c, p = (globals()[m]).run(dataset, args)
+            r_df = result_dataframe(c, p)
+            print(colored(m.upper() + " RESULTS", 'yellow'))
+            r_str = format_result(r_df)
+            print(colored(r_str, 'yellow'))
+            output = getattr(args,'output_' + type + '_' + m)
+            r_df.to_csv(os.path.join("outputs", output), index = False)
+        except BaseException as e:
+            print('Exception: {}'.format(e))
+
 if __name__=="__main__":
-    cbar_models = get_dirs_list('./models/cbar')
-    ml_models = get_dirs_list('./models/ml')
+    cbar_models = get_dir_list('./models/cbar')
+    ml_models = get_dir_list('./models/ml')
 
     args = parse_args(sys.argv[1:])
     print(args)
@@ -137,3 +179,20 @@ if __name__=="__main__":
         list_models(args.list_models)
     elif args.list_models_all:
         list_models(models_type)
+
+    dataset_list = []
+    if args.dataset:
+        dataset_list = [args.dataset]
+    elif args.datasets:
+        dataset_list = args.datasets
+    elif args.datasets_all:
+        dataset_list = get_datasets_list()
+
+    for dataset in dataset_list:
+        for type in models_type:
+            models_list = getattr(args,'run_' + type)
+            if models_list:
+                run_models(dataset, type, models_list, args)
+            elif getattr(args,'run_' + type + '_all'):
+                models_list = globals()[type + "_models"]
+                run_models(dataset, type, models_list, args)
