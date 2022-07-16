@@ -1,4 +1,4 @@
-library("arulesCBA")
+suppressPackageStartupMessages(library(arulesCBA))
 
 cmar = function(train, test, s, c) {
   rdf_train <- train
@@ -7,7 +7,7 @@ cmar = function(train, test, s, c) {
   rdf_test <- test
   rdf_test$class <- as.factor(rdf_test$class)
 
-  install_LUCS_KDD_CMAR()
+  capture.output(install_LUCS_KDD_CMAR(), file='NUL')
 
   clf <- CMAR(class ~ ., data = rdf_train , support = s, confidence = c)
   pred <- predict(clf, rdf_test)

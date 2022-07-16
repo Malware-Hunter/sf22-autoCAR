@@ -6,9 +6,11 @@ import pandas as pd
 import sys
 import os
 from spinner import Spinner
+from models.utils import *
 
 def exec_cmar(path_to_r_file, train, test, s, c):
     r = ro.r
+    r['options'](warn = -1)
     r.source(path_to_r_file)
     with localconverter(ro.default_converter + pandas2ri.converter):
         df_train = ro.conversion.py2rpy(train)
@@ -20,14 +22,9 @@ def exec_cmar(path_to_r_file, train, test, s, c):
     return l
 
 #if __name__=="__main__":
-def run(dataset_file, args):
+def run(dataset, dataset_file, args):
     path_to_r_file = os.path.dirname(os.path.realpath(__file__))
     path_to_r_file = os.path.join(path_to_r_file, "cmar.r")
-    try:
-        dataset = pd.read_csv(dataset_file)
-    except BaseException as e:
-        print('Exception: {}'.format(e))
-        exit(1)
 
     dataset_class = dataset['class']
 

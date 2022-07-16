@@ -9,18 +9,18 @@ from sklearn.metrics import confusion_matrix
 from termcolor import colored, cprint
 import shutil
 import os
+import logging
 
-def parallelize_func(func, parameters, const_parameter = None, cores = cpu_count()):
-    parameters_split = np.array_split(parameters, cores)
-    pool = Pool(cores)
-    result = []
-    if const_parameter == None:
-        result.append(pool.map(func, parameters_split))
-    else:
-        result.append(pool.map(partial(func, const_parameter = const_parameter), parameters_split))
-    pool.close()
-    pool.join()
-    return result[0]
+def parallelize_func(func, fixed_parameter, const_parameters = None, cores = cpu_count()):
+    logr = logging.getLogger()
+    tqdm_disable = logr.getEffectiveLevel() >= logging.INFO
+    x = len(fixed_parameter)
+    with Pool(cores) as pool:
+        if const_parameters == None:
+            result = list(tqdm(pool.imap(func, fixed_parameter), total = x, disable = tqdm_disable))
+        else:
+            result = list(tqdm(pool.imap(partial(func, const_parameters = const_parameters), fixed_parameter), total=x, disable = tqdm_disable))
+    return result
 
 def file_content(dir_path, fold_no, file):
     f_name = os.path.join(dir_path, str(fold_no) + "_" + file)
@@ -68,11 +68,10 @@ def save_data(mw_rules, bw_rules, time_l, location, fold_no):
     save_to_file(bw_rules, location, fold_no, "bw_rules")
     save_to_file(time_l, location, fold_no, "times")
 
-def check_directories(args):
-
+def check_directories(dataset_file, args):
     # - ->> directories to save data <<- -#
     root_path = os.path.dirname(os.path.realpath(__file__))
-    dir_name = (args.dataset).split('/')[-1]
+    dir_name = (dataset_file).split('/')[-1]
     dir_name = dir_name.split('.')[0]
     dir_name += "_S" + str(int(args.min_support * 100.0))
     dir_name += "_C" + str(int(args.min_confidence * 100.0))
@@ -96,17 +95,13 @@ def check_directories(args):
 
     return DIR_BASE, DIR_QFY, DIR_TH
 
-def dataset_transaction(dataset):
-    num_rows = dataset.shape[0]
-    num_cols = dataset.shape[1]
-    t = []
-    for i in tqdm(range(0,num_rows)):
-        l = []
-        for j in range(0,num_cols):
-            if dataset.values[i][j] != 0:
-                l.append(j)
-        t.append(l)
-    return t
+def dataset_transaction(transaction):
+    num_features = len(transaction)
+    l = []
+    for i in range(0, num_features):
+        if transaction[i] != 0:
+            l.append(i)
+    return l
 
 #Dictionary For Column Names
 report_colnames = {
@@ -131,11 +126,7 @@ report_colnames = {
 
 def to_fim_format(dataset):
     result = parallelize_func(dataset_transaction, dataset)
-    data = []
-    for i in range(0, len(result)):
-        for j in range(0, len(result[i])):
-            data.append(result[i][j])
-    return data
+    return result
 
 def to_pandas_dataframe(data, report):
     colnames = ['consequent', 'antecedent'] + [report_colnames.get(r, r) for r in list(report)]
@@ -147,12 +138,35 @@ def to_pandas_dataframe(data, report):
     r_count = int(len(df) * 0.5)
     return df.head(r_count)
 
-def generate_unique_rules(dataset_df, lift, dataset_type):
+def generate_unique_rules(dataset_df, lift):
     rules = []
     if not dataset_df.empty:
         r = dataset_df[(dataset_df['lift'] >= lift)]
-        print("Deleting", dataset_type, "Repeated Rules")
         s = r[['consequent', 'antecedent']].values.tolist()
         r_list = [sorted({i[0]} | set(i[1])) for i in s]
         rules = list(map(list, set(map(lambda i: tuple(i), r_list))))
     return rules
+
+def result_dataframe(classification, prediction, num_rules = -1):
+    tn, fp, fn, tp = confusion_matrix(classification, prediction).ravel()
+    accuracy = metrics.accuracy_score(classification, prediction)
+    precision = metrics.precision_score(classification, prediction, zero_division = 0)
+    recall = metrics.recall_score(classification, prediction, zero_division = 0)
+    f1_score = metrics.f1_score(classification, prediction, zero_division = 0)
+    mcc = metrics.matthews_corrcoef(classification, prediction)
+    roc_auc = metrics.roc_auc_score(classification, prediction)
+    result_dict = {
+        "num_rules": [num_rules],
+        "tp": [tp],
+        "tn": [tn],
+        "fp": [fp],
+        "fn": [fn],
+        "accuracy": [accuracy],
+        "precision": [precision],
+        "recall": [recall],
+        "f1_score": [f1_score],
+        "mcc": [mcc],
+        "roc_auc": [roc_auc]
+    }
+    result_df = pd.DataFrame(result_dict)
+    return result_df

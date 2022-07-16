@@ -6,6 +6,7 @@ import pandas as pd
 import sys
 import os
 from spinner import Spinner
+from models.utils import *
 
 def exec_cba(path_to_r_file, train, test, s, c, l):
     r = ro.r
@@ -20,14 +21,9 @@ def exec_cba(path_to_r_file, train, test, s, c, l):
     return l
 
 #if __name__=="__main__":
-def run(dataset_file, args):
+def run(dataset, dataset_file, args):
     path_to_r_file = os.path.dirname(os.path.realpath(__file__))
     path_to_r_file = os.path.join(path_to_r_file, "cba.r")
-    try:
-        dataset = pd.read_csv(dataset_file)
-    except BaseException as e:
-        print('Exception: {}'.format(e))
-        exit(1)
 
     dataset_class = dataset['class']
 
@@ -47,22 +43,3 @@ def run(dataset_file, args):
         fold_no += 1
 
     return general_class, general_prediction
-
-
-
-
-
-
-
-def function2(train, test):
-    r = ro.r
-    os.chdir('./')
-    r.source(path, local = True)
-    with localconverter(ro.default_converter + pandas2ri.converter):
-        df_train = ro.conversion.py2rpy(train)
-    with localconverter(ro.default_converter + pandas2ri.converter):
-        df_test = ro.conversion.py2rpy(test)
-
-    p = r.cba(df_train, df_test, 0.2, 0.95, 5)
-    l = [x for x in p]
-    return l

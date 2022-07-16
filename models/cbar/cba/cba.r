@@ -1,4 +1,4 @@
-library("arulesCBA")
+suppressPackageStartupMessages(library(arulesCBA))
 
 cba = function(train, test, s, c, l) {
   rdf_train <- train

@@ -4,15 +4,10 @@ from sklearn.model_selection import StratifiedKFold
 import sys
 import os
 from spinner import Spinner
+from models.utils import *
 
 #if __name__=="__main__":
-def run(dataset_file, args):
-    try:
-        dataset = pd.read_csv(dataset_file)
-    except BaseException as e:
-        print('Exception: {}'.format(e))
-        exit(1)
-
+def run(dataset, dataset_file, args):
     dataset_class = dataset['class']
 
     skf = StratifiedKFold(n_splits = 5)

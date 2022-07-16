@@ -1,6 +1,8 @@
 from sklearn import metrics
 from sklearn.metrics import confusion_matrix
 import pandas as pd
+import os
+import shutil
 
 def format_result(result_df):
     result = result_df.to_dict('records')[0]
@@ -21,7 +23,7 @@ def format_result(result_df):
     result_str += "\nROC AuC: {:.3f}\n".format(roc_auc)
     return result_str
 
-def result_dataframe(classification, prediction, num_rules = -1):
+def result_dataframe(classification, prediction, num_rules = 0):
     tn, fp, fn, tp = confusion_matrix(classification, prediction).ravel()
     accuracy = metrics.accuracy_score(classification, prediction)
     precision = metrics.precision_score(classification, prediction, zero_division = 0)
@@ -44,3 +46,25 @@ def result_dataframe(classification, prediction, num_rules = -1):
     }
     result_df = pd.DataFrame(result_dict)
     return result_df
+
+def balanced_dataset(dataset):
+    B = dataset[(dataset['class'] == 0)]
+    M = dataset[(dataset['class'] == 1)]
+
+    lenB = len(B)
+    lenM = len(M)
+    b_dataset = None
+    if lenB > lenM:
+        random_select = B.sample(n = lenM, random_state = 0)
+        b_dataset = pd.concat([random_select, M], ignore_index = True)
+    else:
+        random_select = M.sample(n = lenB, random_state = 0)
+        b_dataset = pd.concat([B, random_select], ignore_index = True)
+    #b_dataset.to_csv("balanced_" + args.dataset, index = False)
+    return b_dataset
+
+def check_directory(root_path, dir_name):
+    dir_path = os.path.join(root_path, dir_name)
+    if os.path.exists(dir_path):
+        shutil.rmtree(dir_path)
+    os.makedirs(dir_name)

@@ -6,6 +6,7 @@ import pandas as pd
 import sys
 import os
 from spinner import Spinner
+from models.utils import *
 
 def exec_cpar(path_to_r_file, train, test):
     r = ro.r
@@ -20,14 +21,9 @@ def exec_cpar(path_to_r_file, train, test):
     return l
 
 #if __name__=="__main__":
-def run(dataset_file, args):
+def run(dataset, dataset_file, args):
     path_to_r_file = os.path.dirname(os.path.realpath(__file__))
     path_to_r_file = os.path.join(path_to_r_file, "cpar.r")
-    try:
-        dataset = pd.read_csv(dataset_file)
-    except BaseException as e:
-        print('Exception: {}'.format(e))
-        exit(1)
 
     dataset_class = dataset['class']
 
