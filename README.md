@@ -2,7 +2,7 @@
 
 NOTE: These Procedures Have Only Been Tested on Ubuntu 20.04
 
-### How to install
+### How to Install
 
 **0. Requirements**
 
@@ -10,7 +10,7 @@ NOTE: These Procedures Have Only Been Tested on Ubuntu 20.04
     ```sh
     $ pip install -r requirements.txt
     ```
-- Install R (How to in [CRAN](https://cran.r-project.org/)):
+- Install R (How to in [CRAN](https://cran.r-project.org/) - Last Acess 17/July/2022):
     ```sh
     $ apt-get update
     $ sudo apt install --no-install-recommends software-properties-common dirmngr
@@ -22,8 +22,8 @@ NOTE: These Procedures Have Only Been Tested on Ubuntu 20.04
 - Install R Packages:
     ```sh
     $ R
-    $ > install.packages('arulesCBA')
-    $ > q()
+    > install.packages('arulesCBA')
+    > q()
     ```
 
 # sf22_classification_based_on_association_rules
