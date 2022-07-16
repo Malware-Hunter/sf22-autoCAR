@@ -3,7 +3,6 @@ import os
 import argparse
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
 from termcolor import colored, cprint
 import models.cbar.cba.run as cba
 import models.cbar.cpar.run as cpar
@@ -14,6 +13,18 @@ import models.ml.svm.run as svm
 from models.utils import *
 from spinner import Spinner
 import logging
+
+def float_range(mini,maxi):
+    # Define the function with default arguments
+    def float_range_checker(arg):
+        try:
+            f = float(arg)
+        except ValueError:
+            raise argparse.ArgumentTypeError("Must be a Floating Ooint Number")
+        if f <= mini or f >= maxi:
+            raise argparse.ArgumentTypeError("Must be > " + str(mini) + " and < " + str(maxi))
+        return f
+    return float_range_checker
 
 def parse_args(argv):
     parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
@@ -66,11 +77,11 @@ def parse_args(argv):
         group_cbar.add_argument(
             '-s', '--min-support', metavar = 'float', required = False,
             help = 'Minimum Support (must be > 0.0 and < 1.0). Default: 0.1',
-            type = float, default = 0.1)
+            type = float_range(0.0, 1.0), default = 0.1)
         group_cbar.add_argument(
             '-c', '--min-confidence', metavar = 'float', required = False,
             help = 'Minimum Confidence (must be > 0.0 and < 1.0). Default: 0.95',
-            type = float, default = 0.95)
+            type = float_range(0.0, 1.0), default = 0.95)
 
     cbar_complementar_args =  any([x in ('cba', 'eqar', '--run-cbar-all') for x in argv])
     if cbar_complementar_args:
@@ -94,7 +105,7 @@ def parse_args(argv):
         group_eqar.add_argument(
             '-t', '--threshold', metavar = 'float',
             help = 'Percentage of Rules to be Used for Testing Samples (must be > 0.0 and < 1.0). Default: 0.1',
-            type = float, default = 0.1)
+            type = float_range(0.0, 1.0), default = 0.1)
         q_list = ['acc', 'c1', 'c2', 'bc', 'kap', 'corr', 'cov', 'prec']
         group_eqar.add_argument(
             '-q', '--qualify', metavar = 'QUALIFY', required = True,
@@ -122,7 +133,6 @@ def parse_args(argv):
                 group_output.add_argument(
                     argument, metavar = 'PREFIX',
                     help = help_txt, type = str, default = default_prefix)
-
     group_output.add_argument(
         '--output-dir', metavar = 'DIRECTORY',
         help = 'Directory For Output Data. Default: outputs',
@@ -197,8 +207,8 @@ def graph_metrics(dataset_file, output_dir):
 
     df = pd.DataFrame(metrics_dict, index = models_index)
     ax = df.plot.bar(rot = 0, edgecolor='white', linewidth=1)
-    ax.set_xlabel('Values')
-    ax.set_ylabel('Models')
+    ax.set_xlabel('Models')
+    ax.set_ylabel('Values')
     ax.legend(ncol = 3, loc = 'upper center')
     ax.set_ylim(0, 100)
     ax.set_title('Metrics to ' + dataset_file)
@@ -218,13 +228,34 @@ def graph_classification(dataset_file, output_dir):
     df = pd.DataFrame(classification_dict, index = models_index)
     stacked_data = df.apply(lambda x: x*100/sum(x), axis = 1)
     ax = stacked_data.plot.barh(rot = 0, stacked = True)
-    ax.set_xlabel('Models')
-    ax.set_ylabel('Values')
+    ax.set_xlabel('Values')
+    ax.set_ylabel('Models')
     ax.legend(ncol = len(classification_list), loc = 'upper center')
     for container in ax.containers:
         ax.bar_label(container, label_type='center', color='white', fmt='%.2f')
     ax.set_title('Classification to ' + dataset_file)
     graph_file = 'gc_' + os.path.splitext(dataset_file.replace("/", "_"))[0] + '.pdf'
+    path_graph_file = os.path.join(output_dir, graph_file)
+    ax.figure.savefig(path_graph_file)
+
+def graph_roc(dataset_file, output_dir):
+    global all_results
+    dataset_results = all_results[(all_results['dataset'] == dataset_file)]
+    roc_dict = dict()
+    models_list = list(dataset_results['model'].str.upper())
+    roc_dict['model'] = models_list
+    values_list = list(dataset_results['roc_auc'] * 100.0)
+    roc_dict['roc_auc'] = values_list
+
+    df = pd.DataFrame(data = roc_dict);
+    ax = df.plot.scatter(x = 'model', y = 'roc_auc', s = 'roc_auc')
+    for i in range(len(models_list)):
+        ax.annotate("{:.2f}".format(values_list[i]), (models_list[i], values_list[i] + 2.0))
+    ax.set_xlabel('Models')
+    ax.set_ylabel('Values')
+    ax.set_ylim(0, 100)
+    ax.set_title('ROC AuC to ' + dataset_file)
+    graph_file = 'gr_' + os.path.splitext(dataset_file.replace("/", "_"))[0] + '.pdf'
     path_graph_file = os.path.join(output_dir, graph_file)
     ax.figure.savefig(path_graph_file)
 
@@ -279,3 +310,4 @@ if __name__=="__main__":
         #if args.graph:
         graph_metrics(dataset_file, args.output_dir)
         graph_classification(dataset_file, args.output_dir)
+        graph_roc(dataset_file, args.output_dir)
