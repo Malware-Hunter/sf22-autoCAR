@@ -1,6 +1,8 @@
 # Nome
 
 NOTE: These Procedures Have Only Been Tested on Ubuntu 20.04
+- Python 3.8.10
+- R 4.2.1
 
 ### How to Install
 
