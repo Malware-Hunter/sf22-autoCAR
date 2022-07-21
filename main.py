@@ -20,14 +20,22 @@ def float_range(mini,maxi):
         try:
             f = float(arg)
         except ValueError:
-            raise argparse.ArgumentTypeError("Must be a Floating Ooint Number")
+            raise argparse.ArgumentTypeError("Must be a Floating Point Number")
         if f <= mini or f >= maxi:
             raise argparse.ArgumentTypeError("Must be > " + str(mini) + " and < " + str(maxi))
         return f
     return float_range_checker
 
+class DefaultHelpParser(argparse.ArgumentParser):
+    def error(self, message):
+        sys.stderr.write('Error: %s\n' % message)
+        self.print_help()
+        sys.exit(2)
+
 def parse_args(argv):
-    parser = argparse.ArgumentParser(formatter_class=argparse.RawTextHelpFormatter)
+    global models_type
+    argv_lower = [x.lower() for x in argv]
+    parser = DefaultHelpParser(formatter_class = argparse.RawTextHelpFormatter)
     list_group = parser.add_mutually_exclusive_group(required = False)
     list_group.add_argument(
         '--list-models', nargs = '+', metavar = 'MODEL_TYPE',
@@ -36,10 +44,12 @@ def parse_args(argv):
     list_group.add_argument(
         '--list-models-all', help = 'Show List of All Models and Exit.',
         action = 'store_true')
-    list_mdls =  any([x in ('--list-models', '--list-models-all') for x in argv])
+    list_mdls =  any([x in ('--list-models', '--list-models-all') for x in argv_lower])
+
     if list_mdls:
         args = parser.parse_args(argv)
         return args
+
     parser.add_argument(
         '-d', '--datasets', nargs = '+', metavar = 'DATASET',
         help = 'One or More Datasets (csv Files). For All Datasets in Directory Use: [DIR_PATH]/*.csv',
@@ -55,7 +65,7 @@ def parse_args(argv):
     cbar_group.add_argument(
         '--run-cbar', nargs = '+', metavar = 'CBAR',
         help = "Run Selected CBAR Models. Choices: " + str(models_dict['cbar']),
-        choices = models_dict['cbar'], type = str)
+        choices = models_dict['cbar'], type = str.lower)
     cbar_group.add_argument(
         '--run-cbar-all', help = "Run All CBAR Models.",
         action = 'store_true')
@@ -63,7 +73,7 @@ def parse_args(argv):
     ml_group.add_argument(
         '--run-ml', nargs = '+', metavar = 'ML',
         help = "Run Selected Machine Learning (ML) Models. Choices: " + str(models_dict['ml']),
-        choices = models_dict['ml'], type = str)
+        choices = models_dict['ml'], type = str.lower)
     ml_group.add_argument(
         '--run-ml-all', help = "Run All Machine Learning (ML) Models.",
         action = 'store_true')
@@ -71,7 +81,7 @@ def parse_args(argv):
         '--plot-graph-all', help = "Plot All Graphics.",
         action = 'store_true')
 
-    cbar_complementar_args =  any([x in ('cba', 'cmar', 'eqar', '--run-cbar-all') for x in argv])
+    cbar_complementar_args =  any([x in ('cba', 'cmar', 'eqar', '--run-cbar-all') for x in argv_lower])
     group_cbar = parser.add_argument_group('Additional Parameters for CBA / CMAR / EQAR')
     if cbar_complementar_args:
         group_cbar.add_argument(
@@ -83,14 +93,14 @@ def parse_args(argv):
             help = 'Minimum Confidence (must be > 0.0 and < 1.0). Default: 0.95',
             type = float_range(0.0, 1.0), default = 0.95)
 
-    cbar_complementar_args =  any([x in ('cba', 'eqar', '--run-cbar-all') for x in argv])
+    cbar_complementar_args =  any([x in ('cba', 'eqar', '--run-cbar-all') for x in argv_lower])
     if cbar_complementar_args:
         group_cbar.add_argument(
             '-m', '--max-length', metavar = 'int', required = False,
             help = 'Max Length of Rules (Antecedent + Consequent) (must be > 2). Default: 5',
             type = int, default = 5)
 
-    cbar_complementar_args =  any([x in ('eqar', '--run-cbar-all') for x in argv])
+    cbar_complementar_args =  any([x in ('eqar', '--run-cbar-all') for x in argv_lower])
     group_eqar = parser.add_argument_group('Additional Parameters for EQAR')
     if cbar_complementar_args:
         group_eqar.add_argument(
@@ -108,13 +118,13 @@ def parse_args(argv):
             type = float_range(0.0, 1.0), default = 0.1)
         q_list = ['acc', 'c1', 'c2', 'bc', 'kap', 'corr', 'cov', 'prec']
         group_eqar.add_argument(
-            '-q', '--qualify', metavar = 'QUALIFY', required = True,
+            '-q', '--qualify', metavar = 'QUALIFY', required = list_mdls,
             help = 'Metric for Rules Qualification. Choices: ' + str(q_list),
-            choices = q_list, type = str)
+            choices = q_list, type = str.lower)
         group_eqar.add_argument(
             '-o', '--overwrite', help = "Delete All Previous Data.",
             action = "store_true")
-        if '--use-balanced-datasets' not in argv:
+        if '--use-balanced-datasets' not in argv_lower:
             group_eqar.add_argument(
                 '-u', '--use-proportional-values',
                 help = "Use Proportional Values to Support and Confidence.",
@@ -125,7 +135,7 @@ def parse_args(argv):
         list_models = models_dict[type]
         for model in list_models:
             all = '--run-' + type + '-all'
-            output_args =  any([x in (model, all) for x in argv])
+            output_args =  any([x in (model, all) for x in argv_lower])
             if output_args:
                 argument = '--prefix-output-' + type + '-' + model
                 default_prefix = type + '_' + model + '_'
@@ -139,6 +149,7 @@ def parse_args(argv):
         type = str, default = "outputs")
 
     args = parser.parse_args(argv)
+
     return args
 
 def list_models(selected_models_type):
@@ -163,7 +174,6 @@ def get_dir_list(dir_path):
         l.remove('__pycache__')
     return l
 
-output_data = "output_data.csv"
 all_results = pd.DataFrame()
 
 def run_models(dataset, dataset_file, model_type, selected_models_list, args):
@@ -268,7 +278,7 @@ if __name__=="__main__":
     models_path = 'models'
     models_type = get_dir_list(models_path)
     models_dict = get_models()
-    models_output_files = []
+    #models_output_files = []
 
     args = parse_args(sys.argv[1:])
     print(args)
