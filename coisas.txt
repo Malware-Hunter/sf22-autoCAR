@@ -1,6 +1,6 @@
 **testes no Debian10 e Ubuntu22.04**
 
-** antes dos requirements, falta: 
+** antes dos requirements, falta:
 sudo apt install r-base
 
 ** na hora de executar, falta:
@@ -10,10 +10,12 @@ sudo python3 -m pip install termcolor
 ** na hora de usar:
 ** parâmetro --list-models ficou confuso. quais são os MODEL_TYPE disponíveis? como o usuário vai saber o nome desses tipos?
 
-python3 main.py --list-models 
+python3 main.py --list-models
 usage: main.py [-h] [--list-models MODEL_TYPE [MODEL_TYPE ...] |
                --list-models-all]
 main.py: error: argument --list-models: expected at least one argument
+
+>> Agora toda vez que ocorre um erro no argparse é mostrado o help
 
 ** escolhendo um parâmetro errado, acabei descobrindo. mas, isto não será nada intuitivo para o usuário:
 
@@ -33,8 +35,10 @@ Namespace(list_models=['cbar'], list_models_all=False)
 
 ** por que a maioria dos parâmetros é "--" e o dataset é "-d"? por que não "--dataset" ou "--datasets"?
 
-** por que quando mostra os métodos os nomes são RF e SVM e quando vai usar tem que ser "rf" e "svm"? não faz muito sentido e confunde o usuário. não dá pra permitir RF e rf? pega o parâmetro que o usuário digita e transforma em lower case. 
-python3 main.py --use-balanced-datasets --run-cbar-all --run-ml RF 
+>> Pode ser tanto -d como --datasets. Posso tirar o -d se for o caso.
+
+** por que quando mostra os métodos os nomes são RF e SVM e quando vai usar tem que ser "rf" e "svm"? não faz muito sentido e confunde o usuário. não dá pra permitir RF e rf? pega o parâmetro que o usuário digita e transforma em lower case.
+python3 main.py --use-balanced-datasets --run-cbar-all --run-ml RF
 usage: main.py [-h] [--list-models MODEL_TYPE [MODEL_TYPE ...] |
                --list-models-all] -d DATASET [DATASET ...]
                [--use-balanced-datasets] [--verbose]
@@ -47,5 +51,6 @@ usage: main.py [-h] [--list-models MODEL_TYPE [MODEL_TYPE ...] |
                [--prefix-output-cbar-cmar PREFIX] [--output-dir DIRECTORY]
 main.py: error: argument --run-ml: invalid choice: 'RF' (choose from 'svm', 'rf')
 
-** seria bom ter alguns datasets pequenos no repositório para testes rápidas. pode ser versões reduzidas do Drebin e Androcrawl, por exemplo. poucas centenas de amostras é o suficiente para testes rápidas. 
+>> Feito
 
+** seria bom ter alguns datasets pequenos no repositório para testes rápidas. pode ser versões reduzidas do Drebin e Androcrawl, por exemplo. poucas centenas de amostras é o suficiente para testes rápidas.
