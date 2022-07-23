@@ -1,36 +1,16 @@
-import rpy2.robjects as ro
-from rpy2.robjects import pandas2ri
-from rpy2.robjects.conversion import localconverter
-from sklearn.model_selection import StratifiedKFold
-import pandas as pd
 import sys
 import os
+from pyarc import CBA, TransactionDB
+import pandas as pd
 from spinner import Spinner
-from models.utils import *
-from termcolor import colored, cprint
 import logging
+from sklearn.model_selection import StratifiedKFold
 
-def exec_cba(path_to_r_file, train, test, s, c, l):
-    l = []
-    try:
-        r = ro.r
-        r.source(path_to_r_file)
-        with localconverter(ro.default_converter + pandas2ri.converter):
-            df_train = ro.conversion.py2rpy(train)
-        with localconverter(ro.default_converter + pandas2ri.converter):
-            df_test = ro.conversion.py2rpy(test)
-
-        p = r.cba(df_train, df_test, s, c, l)
-        l = [x for x in p]
-    except BaseException as e:
-        msg = colored('Exception When Running CBAR CBA.\n{}'.format(e), 'red')
-        logging.error(msg)
-    return l
-
-#if __name__=="__main__":
 def run(dataset, dataset_file, args):
-    path_to_r_file = os.path.dirname(os.path.realpath(__file__))
-    path_to_r_file = os.path.join(path_to_r_file, "cba.r")
+    global logger
+    logger = logging.getLogger('CBA')
+    if args.verbose:
+        logger.setLevel(logging.INFO)
 
     dataset_class = dataset['class']
 
@@ -41,10 +21,28 @@ def run(dataset, dataset_file, args):
     for train_index, test_index in skf.split(dataset, dataset_class):
         train = dataset.loc[train_index,:]
         test = dataset.loc[test_index,:]
-        spn = Spinner("Executing Fold {}".format(fold_no))
-        spn.start()
-        prediction_result = exec_cba(path_to_r_file, train, test, args.min_support, args.min_confidence, args.max_length)
-        spn.stop()
+
+        logger.info("Executing Fold {}".format(fold_no))
+        if not args.verbose:
+            spn = Spinner("Executing Fold {}".format(fold_no))
+            spn.start()
+
+        logger.info("Converting Data to Transactions.")
+        txns_train = TransactionDB.from_DataFrame(train)
+        txns_test = TransactionDB.from_DataFrame(test)
+
+        cba = CBA(support = args.min_support, confidence = args.min_confidence, algorithm="m1", maxlen = args.max_length)
+        top_rules_args = {'total_timeout':1200, 'max_iterations':500, 'init_support': args.min_support, 'init_conf':1.0, 'target_rule_count':1000}
+        logger.info("Model Fit.")
+        cba.fit(txns_train, top_rules_args = top_rules_args)
+
+        if not args.verbose:
+            spn.stop()
+
+        logger.info("Making Predictions.")
+        prediction_result = cba.predict(txns_test)
+        prediction_result =  list(map(int, prediction_result))
+
         if prediction_result:
             general_class += list(test['class'])
             general_prediction += prediction_result
