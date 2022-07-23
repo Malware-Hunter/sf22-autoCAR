@@ -14,9 +14,6 @@ from .rules import *
 from models.utils import balanced_dataset
 import logging
 #-----------------------------------------------------------------------
-DIR_BASE = ""
-DIR_QFY = ""
-DIR_TH = ""
 
 step_dict = {
     "rules_generate": 0,
@@ -42,7 +39,7 @@ def execute_fim(parameters):
                     "Sup >> {:.2f}".format(support),
                     "Conf >> {:.2f}".format(confidence)]
     info = ' '.join(str_list)
-    logging.info(info)
+    logger.info(info)
     algorithm_fim = globals()[algorithm]
     result = algorithm_fim(dataset, target = 'r', zmin = 2, zmax = max_l,
                     supp = support, conf = confidence, report = report, mode = 'o')
@@ -52,7 +49,7 @@ def execute_fim(parameters):
     pct = (1.0 - (len(r)/len(result))) * 100.0 if len(result) != 0 else 0.0
     str_list = ["Generate {}".format(len(r)), dataset_type, "Association Rules ({:.3f})".format(pct)]
     info = ' '.join(str_list)
-    logging.info(info)
+    logger.info(info)
     return r
 
 def rules_subset(rule_to_check, const_parameters):
@@ -98,10 +95,10 @@ def get_rules(train, args, fold_no):
         bw_dataset = train[(train['class'] == 0)]
         bw_dataset = bw_dataset.drop(['class'], axis=1)
 
-        logging.info('Preparing MALWARES Data')
+        logger.info('Preparing MALWARES Data')
         dataset_list = mw_dataset.values.tolist()
         mw_fim = to_fim_format(dataset_list)
-        logging.info('Preparing BENIGNS Data')
+        logger.info('Preparing BENIGNS Data')
         dataset_list = bw_dataset.values.tolist()
         bw_fim = to_fim_format(dataset_list)
 
@@ -141,7 +138,7 @@ def get_rules(train, args, fold_no):
 
     if stopped_step <= step_dict.get(step):
         update_log(DIR_BASE, fold_no, step)
-        logging.info("Generating Unique Rules: INTERSECTION.")
+        logger.info("Generating Unique Rules: INTERSECTION.")
 
         start = timeit.default_timer()
         rules_inter = rules_intersection(mw_rules, bw_rules)
@@ -161,11 +158,11 @@ def get_rules(train, args, fold_no):
 
         start = timeit.default_timer()
         mw_rules = list(mw_rules)
-        logging.info("Generating MALWARES Unique Rules: SUPERSET.")
+        logger.info("Generating MALWARES Unique Rules: SUPERSET.")
         mw_result = parallelize_func(rules_superset, mw_rules, const_parameters = [mw_rules, args])
         mw_rules = list(filter(None, mw_result))
         bw_rules = list(bw_rules)
-        logging.info("Generating BENIGNS Unique Rules: SUPERSET.")
+        logger.info("Generating BENIGNS Unique Rules: SUPERSET.")
         bw_result = parallelize_func(rules_superset, bw_rules, const_parameters = [bw_rules, args])
         bw_rules = list(filter(None, bw_result))
         end = timeit.default_timer()
@@ -183,10 +180,10 @@ def get_rules(train, args, fold_no):
 
         start = timeit.default_timer()
         mw_rules = list(mw_rules)
-        logging.info("Generating MALWARES Unique Rules: SUBSET.")
+        logger.info("Generating MALWARES Unique Rules: SUBSET.")
         mw_result = parallelize_func(rules_subset, mw_rules, const_parameters = bw_rules)
         bw_rules = list(bw_rules)
-        logging.info("Generating BENIGNS Unique Rules: SUBSET.")
+        logger.info("Generating BENIGNS Unique Rules: SUBSET.")
         bw_result = parallelize_func(rules_subset, bw_rules, const_parameters = mw_rules)
         end = timeit.default_timer()
         time_tuple = (step, end - start)
@@ -282,36 +279,36 @@ def get_qualified_rules(train, mw_rules, bw_rules, times, args, fold_no):
         start = timeit.default_timer()
         mw_qfy_parameters = file_content(DIR_QFY, fold_no, "mw_qualify_parameters")
         if not len(mw_qfy_parameters) and mw_rules:
-            logging.info("Getting Parameters for Qualifying MALWARES Rules.")
+            logger.info("Getting Parameters for Qualifying MALWARES Rules.")
             qfy_parameters = parallelize_func(quality_parameters, mw_rules, const_parameters = [train, 1])
             save_to_file(qfy_parameters, DIR_QFY, fold_no, "mw_qualify_parameters")
         rules_qfy_parameters = list(zip(mw_rules, qfy_parameters))
         if rules_qfy_parameters:
-            logging.info("Qualifying MALWARES Rules.")
+            logger.info("Qualifying MALWARES Rules.")
             results = parallelize_func(quality_rules, rules_qfy_parameters, const_parameters = [train, args.qualify, 1])
             results = list(filter(None, results))
             mw_qfy_rules = pd.DataFrame(results)
             mw_qfy_rules = mw_qfy_rules.sort_values(by = ['q_value'], ascending = False)
             mw_qfy_rules.to_csv(os.path.join(DIR_QFY, str(fold_no) + "_mw_rules_qualify"), index = False)
         else:
-            logging.info("No MALWARES Rules to Qualify.")
+            logger.info("No MALWARES Rules to Qualify.")
 
         bw_qfy_parameters = file_content(DIR_QFY, fold_no, "bw_qualify_parameters")
         if not len(bw_qfy_parameters) and bw_rules:
-            logging.info("Getting Parameters for Qualifying BENIGNS Rules.")
+            logger.info("Getting Parameters for Qualifying BENIGNS Rules.")
             qfy_parameters = parallelize_func(quality_parameters, bw_rules, const_parameters = [train, 0])
             save_to_file(qfy_parameters, DIR_QFY, fold_no, "bw_qualify_parameters")
         rules_qfy_parameters = list(zip(bw_rules, qfy_parameters))
 
         if rules_qfy_parameters:
-            logging.info("Qualifying BENIGNS Rules.")
+            logger.info("Qualifying BENIGNS Rules.")
             results = parallelize_func(quality_rules, rules_qfy_parameters, const_parameters = [train, args.qualify, 0])
             results = list(filter(None, results))
             bw_qfy_rules = pd.DataFrame(results)
             bw_qfy_rules = bw_qfy_rules.sort_values(by = ['q_value'], ascending = False)
             bw_qfy_rules.to_csv(os.path.join(DIR_QFY, str(fold_no) + "_bw_rules_qualify"), index = False)
         else:
-            logging.info("No BENIGNS Rules to Qualify.")
+            logger.info("No BENIGNS Rules to Qualify.")
 
         end = timeit.default_timer()
         time_tuple = (step, end - start)
@@ -357,12 +354,12 @@ def get_results(test, mw_rules, bw_rules, times, args, fold_no):
     pct_match_rules = []
     if stopped_step <= step_dict.get(step):
         if len(mw_rules) == 0:
-            logging.warning("There Are No MALWARES Rules For Testing.")
+            logger.warning("There Are No MALWARES Rules For Testing.")
             return None, None, None
-        logging.info("{} MALWARES Rules To Be Tested.".format(len(mw_rules)))
+        logger.info("{} MALWARES Rules To Be Tested.".format(len(mw_rules)))
 
         update_log(DIR_TH, fold_no, step)
-        logging.info("Testing Applications.")
+        logger.info("Testing Applications.")
 
         start = timeit.default_timer()
         dataset_list  = test.values.tolist()
@@ -416,10 +413,10 @@ def eqar(train, test, args, fold_no):
 
 #if __name__=="__main__":
 def run(dataset, dataset_file, args):
+    global logger
+    logger = logging.getLogger('EQAR')
     if args.verbose:
-        logging.basicConfig(format = '%(message)s', level = logging.DEBUG)
-    else:
-        logging.basicConfig(format = '%(message)s')
+        logger.setLevel(logging.INFO)
 
     global DIR_BASE
     global DIR_QFY
@@ -437,7 +434,7 @@ def run(dataset, dataset_file, args):
     for train_index, test_index in skf.split(dataset, dataset_class):
         train = dataset.loc[train_index,:]
         test = dataset.loc[test_index,:]
-        logging.info("Executing Fold {}".format(fold_no))
+        logger.info("Executing Fold {}".format(fold_no))
 
         if not args.verbose:
             spn = Spinner("Executing Fold {}".format(fold_no))

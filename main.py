@@ -40,7 +40,7 @@ def parse_args(argv):
     list_group.add_argument(
         '--list-models', nargs = '+', metavar = 'MODEL_TYPE',
         help = "Show List of Models and Exit. Choices: " + str(models_type),
-        choices = models_type, type = str)
+        choices = models_type, type = str.lower)
     list_group.add_argument(
         '--list-models-all', help = 'Show List of All Models and Exit.',
         action = 'store_true')
@@ -118,7 +118,7 @@ def parse_args(argv):
             type = float_range(0.0, 1.0), default = 0.1)
         q_list = ['acc', 'c1', 'c2', 'bc', 'kap', 'corr', 'cov', 'prec']
         group_eqar.add_argument(
-            '-q', '--qualify', metavar = 'QUALIFY', required = list_mdls,
+            '-q', '--qualify', metavar = 'QUALIFY', required = not list_mdls,
             help = 'Metric for Rules Qualification. Choices: ' + str(q_list),
             choices = q_list, type = str.lower)
         group_eqar.add_argument(
@@ -270,7 +270,7 @@ def graph_roc(dataset_file, output_dir):
     ax.figure.savefig(path_graph_file)
 
 if __name__=="__main__":
-    logging.basicConfig(format = '%(message)s')
+    logging.basicConfig(format = '%(name)s - %(levelname)s - %(message)s')
     global models_path
     global models_type
     global models_dict
@@ -278,7 +278,6 @@ if __name__=="__main__":
     models_path = 'models'
     models_type = get_dir_list(models_path)
     models_dict = get_models()
-    #models_output_files = []
 
     args = parse_args(sys.argv[1:])
     print(args)

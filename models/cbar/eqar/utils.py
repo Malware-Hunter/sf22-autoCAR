@@ -12,8 +12,8 @@ import os
 import logging
 
 def parallelize_func(func, fixed_parameter, const_parameters = None, cores = cpu_count()):
-    logr = logging.getLogger()
-    tqdm_disable = logr.getEffectiveLevel() >= logging.INFO
+    logger = logging.getLogger('EQAR')
+    tqdm_disable = logger.getEffectiveLevel() > logging.INFO
     x = len(fixed_parameter)
     with Pool(cores) as pool:
         if const_parameters == None:
