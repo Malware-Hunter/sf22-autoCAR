@@ -1,17 +1,15 @@
 # Nome
 
+For Installation, Follow Instructions in **How to Install** Section or Run `setup.sh` Script.
+
+### How to Install
+
 NOTE: These Procedures Have Only Been Tested on Ubuntu 20.04
 - Python 3.8.10
 - R 4.2.1
 
-### How to Install
-
 **0. Requirements**
 
-- Install Required Python Libraries:
-    ```sh
-    $ pip install -r requirements.txt
-    ```
 - Install R (How to in [CRAN](https://cran.r-project.org/) - Last Acess 17/July/2022):
     ```sh
     $ apt-get update
@@ -21,6 +19,12 @@ NOTE: These Procedures Have Only Been Tested on Ubuntu 20.04
     $ sudo apt update
     $ sudo apt install --no-install-recommends r-base
     ```
+
+- Install Required Python Libraries:
+    ```sh
+    $ pip install -r requirements.txt
+    ```
+
 - Install R Packages:
     ```sh
     $ R
