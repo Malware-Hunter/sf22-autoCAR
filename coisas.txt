@@ -6,6 +6,14 @@ coisas novas:
 - atualizar o README.md e indicar também o script setup.sh (que já faz tudo direitinho)
 - falta o pyarc nos requirements
 
+- se eu digito: python3 main.py --datasets datasets/androit.csv
+saida (não executa e nem ajuda o usuário):
+Namespace(list_models=None, list_models_all=False, datasets=['datasets/androit.csv'], use_balanced_datasets=False, verbose=False, run_cbar=None, run_cbar_all=False, run_ml=None, run_ml_all=False, plot_graph=None, output_dir='outputs')
+
+- se eu digito: python3 main.py --datasets datasets/androit.csv --run-cbar-all --run-ml-all --output-dir teste 
+nada acontece. imprime a ajuda. não era para executar com esses parâmetros?
+
+
 
 **testes no Debian10 e Ubuntu22.04**
 
