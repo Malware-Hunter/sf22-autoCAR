@@ -1,3 +1,10 @@
+
+coisas novas: 
+- permitir ao usuário executar: ./main.py (incluir #!/usr/bin/python3, ou algo assim, no cabeçalho do arquivo)
+- inverter as instruções no README.md (primeiro instalar o r-base, para depois instalar os requirements)
+- criar um Dockerfile para geração da imagem Linux completa
+- atualizar o README.md e indicar também o script setup.sh (que já faz tudo direitinho)
+
 **testes no Debian10 e Ubuntu22.04**
 
 ** antes dos requirements, falta:
