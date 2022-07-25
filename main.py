@@ -77,9 +77,11 @@ def parse_args(argv):
     ml_group.add_argument(
         '--run-ml-all', help = "Run All Machine Learning (ML) Models.",
         action = 'store_true')
-    parser.add_argument(
-        '--plot-graph-all', help = "Plot All Graphics.",
-        action = 'store_true')
+    graphs_group = parser.add_argument_group('Parameters for Graphics')
+    graphs_group.add_argument(
+        '--plot-graph', nargs = '+', metavar = 'GRAPH_TYPE',
+        help = "Run Selected Graphics. Choices: " + str(graphics_type),
+        choices = graphics_type, type = str.lower)
 
     cbar_complementar_args =  any([x in ('cba', 'cmar', 'eqar', '--run-cbar-all') for x in argv_lower])
     group_cbar = parser.add_argument_group('Additional Parameters for CBA / CMAR / EQAR')
@@ -184,19 +186,24 @@ def run_models(dataset, dataset_file, model_type, selected_models_list, args):
                 "to Dataset", colored(dataset_file, 'green'))
         try:
             c, p = (globals()[model]).run(dataset, dataset_file, args)
-            r_df = result_dataframe(c, p)
-            print(colored(model.upper() + " Results to Dataset " + dataset_file, 'yellow'))
-            r_str = format_result(r_df)
-            print(colored(r_str, 'yellow'))
-            prefix_output_file = getattr(args, 'prefix_output_' + model_type + '_' + model)
-            output_file = prefix_output_file + dataset_file.replace("/", "_")
-            output_file_path = os.path.join(args.output_dir, output_file)
-            r_df.to_csv(output_file_path, index = False)
-            r_df['model'] = model
-            r_df['dataset'] = dataset_file
-            all_results = pd.concat([all_results, r_df], ignore_index = True)
+            if p:
+                r_df = result_dataframe(c, p)
+                print(colored(model.upper() + ' Results to Dataset ' + dataset_file, 'blue', attrs = ['bold']))
+                r_str = format_result(r_df)
+                print(colored(r_str, 'blue', attrs = ['bold']))
+                prefix_output_file = getattr(args, 'prefix_output_' + model_type + '_' + model)
+                output_file = prefix_output_file + dataset_file.replace("/", "_")
+                output_file_path = os.path.join(args.output_dir, output_file)
+                r_df.to_csv(output_file_path, index = False)
+                r_df['model'] = model
+                r_df['dataset'] = dataset_file
+                all_results = pd.concat([all_results, r_df], ignore_index = True)
+            else:
+                msg = colored('No ' + model.upper() + ' Results to Dataset ' + dataset_file + '.', 'yellow')
+                logging.warning(msg)
         except BaseException as e:
-            logging.error('Exception in ' + model_type.upper() + " " + model.upper() + ': {}'.format(e))
+            msg = colored('Exception in ' + model_type.upper() + " " + model.upper() + ': {}'.format(e), 'red')
+            logging.error(msg)
 
 def get_models():
     d = {}
@@ -208,6 +215,9 @@ def get_models():
 
 def graph_metrics(dataset_file, output_dir):
     global all_results
+    if all_results.empty:
+        return
+
     dataset_results = all_results[(all_results['dataset'] == dataset_file)]
     models_index = list(dataset_results['model'].str.upper())
     metrics_dict = dict()
@@ -226,8 +236,11 @@ def graph_metrics(dataset_file, output_dir):
     path_graph_file = os.path.join(output_dir, graph_file)
     ax.figure.savefig(path_graph_file)
 
-def graph_classification(dataset_file, output_dir):
+def graph_class(dataset_file, output_dir):
     global all_results
+    if all_results.empty:
+        return
+
     dataset_results = all_results[(all_results['dataset'] == dataset_file)]
     models_index = list(dataset_results['model'].str.upper())
     classification_dict = dict()
@@ -242,7 +255,8 @@ def graph_classification(dataset_file, output_dir):
     ax.set_ylabel('Models')
     ax.legend(ncol = len(classification_list), loc = 'upper center')
     for container in ax.containers:
-        ax.bar_label(container, label_type='center', color='white', fmt='%.2f')
+        if container.datavalues[0] > 1.0:
+            ax.bar_label(container, label_type = 'center', color = 'white', fmt = '%.2f')
     ax.set_title('Classification to ' + dataset_file)
     graph_file = 'gc_' + os.path.splitext(dataset_file.replace("/", "_"))[0] + '.pdf'
     path_graph_file = os.path.join(output_dir, graph_file)
@@ -250,24 +264,36 @@ def graph_classification(dataset_file, output_dir):
 
 def graph_roc(dataset_file, output_dir):
     global all_results
+    if all_results.empty:
+        return
+
     dataset_results = all_results[(all_results['dataset'] == dataset_file)]
     roc_dict = dict()
     models_list = list(dataset_results['model'].str.upper())
     roc_dict['model'] = models_list
     values_list = list(dataset_results['roc_auc'] * 100.0)
     roc_dict['roc_auc'] = values_list
+    markers = ['o', '^', 's', 'P', 'X', 'd', '*', 'x', '+', 'D', 'v']
 
     df = pd.DataFrame(data = roc_dict);
-    ax = df.plot.scatter(x = 'model', y = 'roc_auc', s = 'roc_auc')
-    for i in range(len(models_list)):
-        ax.annotate("{:.2f}".format(values_list[i]), (models_list[i], values_list[i] + 2.0))
-    ax.set_xlabel('Models')
-    ax.set_ylabel('Values')
-    ax.set_ylim(0, 100)
-    ax.set_title('ROC AuC to ' + dataset_file)
+
+    import matplotlib.pyplot as plt
+
+    i = 0.0
+    for px, py, m in zip(df.model, df.roc_auc, markers):
+        plt.scatter(px, py, marker = m, s = py)
+        plt.annotate("{:.2f}".format(py), (i - 0.2, py - 6.0))
+        i += 1.0
+
+    plt.xlabel('Models')
+    plt.ylabel('Values')
+    plt.xlim(-1, len(models_list))
+    plt.ylim(0, 100)
+    plt.title('ROC AuC to ' + dataset_file)
+
     graph_file = 'gr_' + os.path.splitext(dataset_file.replace("/", "_"))[0] + '.pdf'
     path_graph_file = os.path.join(output_dir, graph_file)
-    ax.figure.savefig(path_graph_file)
+    plt.savefig(path_graph_file)
 
 if __name__=="__main__":
     logging.basicConfig(format = '%(name)s - %(levelname)s - %(message)s')
@@ -278,6 +304,9 @@ if __name__=="__main__":
     models_path = 'models'
     models_type = get_dir_list(models_path)
     models_dict = get_models()
+
+    global graphics_type
+    graphics_type = ['metrics', 'roc', 'class']
 
     args = parse_args(sys.argv[1:])
     print(args)
@@ -316,7 +345,10 @@ if __name__=="__main__":
                 selected_models_list = models_dict[model_type]
                 run_models(dataset, dataset_file, model_type, selected_models_list, args)
 
-        #if args.graph:
-        graph_metrics(dataset_file, args.output_dir)
-        graph_classification(dataset_file, args.output_dir)
-        graph_roc(dataset_file, args.output_dir)
+        if args.plot_graph:
+            for g in args.plot_graph:
+                (globals()['graph_' + g])(dataset_file, args.output_dir)
+        else:
+            graph_metrics(dataset_file, args.output_dir)
+            graph_class(dataset_file, args.output_dir)
+            graph_roc(dataset_file, args.output_dir)
