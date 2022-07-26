@@ -1,2 +1,2 @@
 #!/bin/bash
-sudo docker build -t sf22/cbar:v1 .
+sudo docker build -t mhsf22/toolname:v1 .
