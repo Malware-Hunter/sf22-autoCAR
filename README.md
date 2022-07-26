@@ -1,12 +1,19 @@
-# Nome
+# AutoCAR
+
+### Environment
+
+The tool has been tested and used in practice in the following environments:
+
+**Ubuntu 20.04**
+
+- Kernel = `Linux version 5.4.0-120-generic (buildd@lcy02-amd64-006) (gcc version 9.4.0 (Ubuntu 9.4.0-1ubuntu1~20.04.1)) #136-Ubuntu SMP Fri Jun 10 13:40:48 UTC 2022`
+- Python = `Python 3.8.10`
+- R 4.2.1
+
 
 For Installation, Follow Instructions in **How to Install** Section or Run `setup.sh` Script.
 
 ### How to Install
-
-NOTE: These Procedures Have Only Been Tested on Ubuntu 20.04
-- Python 3.8.10
-- R 4.2.1
 
 **0. Requirements**
 
