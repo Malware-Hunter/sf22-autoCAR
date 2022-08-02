@@ -32,11 +32,19 @@ For Installation, Follow Instructions in **How to Install** Section or Run `setu
     $ pip install -r requirements.txt
     ```
 
-- Install R Packages:
-    ```sh
-    $ R
-    > install.packages('arulesCBA')
-    > q()
+- Install R Package **arulesCBA**
+
+  **Stable CRAN version:** Install From Within R With
+
+    ``` r
+    install.packages("arulesCBA")
+    ```
+
+  **Current development version:** Install From
+    [r-universe.](https://mhahsler.r-universe.dev/ui#package:arulesCBA)
+
+    ``` r
+    install.packages("arulesCBA", repos = "https://mhahsler.r-universe.dev")
     ```
 
 # sf22_classification_based_on_association_rules
