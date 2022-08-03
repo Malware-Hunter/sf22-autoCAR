@@ -12,16 +12,19 @@ from termcolor import colored, cprint
 import logging
 
 def exec_cmar(path_to_r_file, train, test, s, c):
+    logger.info("Starting CBAR CMAR in R.")
     prediction_list = []
     try:
         r = ro.r
         r['options'](warn = -1)
         r.source(path_to_r_file)
+        logger.info("Converting Data to R Format.")
         with localconverter(ro.default_converter + pandas2ri.converter):
             df_train = ro.conversion.py2rpy(train)
         with localconverter(ro.default_converter + pandas2ri.converter):
             df_test = ro.conversion.py2rpy(test)
 
+        logger.info("Executing CMAR Model.")
         p = r.cmar(df_train, df_test, s, c)
         to_np = np.array(p)
         to_list = to_np.tolist()
@@ -31,7 +34,7 @@ def exec_cmar(path_to_r_file, train, test, s, c):
         if len(prediction_list) < len_before:
             prediction_list = []
     except BaseException as e:
-        msg = colored('Exception When Running CBAR CBA: {}'.format(e), 'red')
+        msg = colored('Exception When Running CBAR CMAR (exec_cmar): {}'.format(e), 'red')
         logger.error(msg)
     return prediction_list
 
@@ -54,10 +57,13 @@ def run(dataset, dataset_file, args):
     for train_index, test_index in skf.split(dataset, dataset_class):
         train = dataset.loc[train_index,:]
         test = dataset.loc[test_index,:]
-        spn = Spinner("Executing Fold {}".format(fold_no))
-        spn.start()
+        logger.info("Executing Fold {}".format(fold_no))
+        if not args.verbose:
+            spn = Spinner("Executing Fold {}".format(fold_no))
+            spn.start()
         prediction_result = exec_cmar(path_to_r_file, train, test, args.min_support, args.min_confidence)
-        spn.stop()
+        if not args.verbose:
+            spn.stop()
         if prediction_result:
             general_class += list(test['class'])
             general_prediction += prediction_result

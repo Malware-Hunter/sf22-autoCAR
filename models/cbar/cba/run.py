@@ -21,12 +21,10 @@ def run(dataset, dataset_file, args):
     for train_index, test_index in skf.split(dataset, dataset_class):
         train = dataset.loc[train_index,:]
         test = dataset.loc[test_index,:]
-
         logger.info("Executing Fold {}".format(fold_no))
         if not args.verbose:
             spn = Spinner("Executing Fold {}".format(fold_no))
             spn.start()
-
         logger.info("Converting Data to Transactions.")
         txns_train = TransactionDB.from_DataFrame(train)
         txns_test = TransactionDB.from_DataFrame(test)
@@ -38,7 +36,6 @@ def run(dataset, dataset_file, args):
 
         if not args.verbose:
             spn.stop()
-
         logger.info("Making Predictions.")
         prediction_result = cba.predict(txns_test)
         prediction_result =  list(map(int, prediction_result))

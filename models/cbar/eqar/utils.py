@@ -129,22 +129,33 @@ def to_fim_format(dataset):
     return result
 
 def to_pandas_dataframe(data, report):
+    global r_count
     colnames = ['consequent', 'antecedent'] + [report_colnames.get(r, r) for r in list(report)]
-    df = pd.DataFrame(data, columns=colnames)
-    s = df[['consequent', 'antecedent']].values.tolist()
+    dataset_df = pd.DataFrame(data, columns = colnames)
+    s = dataset_df[['consequent', 'antecedent']].values.tolist()
     size_list = [len({i[0]} | set(i[1])) for i in s]
-    df['size'] = size_list
-    df = df.sort_values(['support_itemset_relative','confidence', 'size'], ascending = [False, False, True])
-    r_count = int(len(df) * 0.5)
-    return df.head(r_count)
+    dataset_df['size'] = size_list
+    dataset_df.rename(columns = {'support_itemset_relative':'support'}, inplace = True)
+    #dataset_df = dataset_df.sort_values(['support_itemset_relative','confidence', 'size'], ascending = [False, False, True])
+    #dataset_df = dataset_df.sort_values('size', ascending = True)
+    return dataset_df
 
-def generate_unique_rules(dataset_df, lift):
+def generate_unique_rules(dataset_df, args):
     rules = []
+    supp_step = 0.05
     if not dataset_df.empty:
-        r = dataset_df[(dataset_df['lift'] >= lift)]
-        s = r[['consequent', 'antecedent']].values.tolist()
-        r_list = [sorted({i[0]} | set(i[1])) for i in s]
-        rules = list(map(list, set(map(lambda i: tuple(i), r_list))))
+        ds_df = dataset_df[(dataset_df['lift'] >= args.min_lift)]
+        ds_df = ds_df.sort_values('support', ascending = False)
+        flag = True
+        supp = args.min_support
+        while flag:
+            s = ds_df[['consequent', 'antecedent']].values.tolist()
+            r_list = [sorted({i[0]} | set(i[1])) for i in s]
+            rules = list(map(list, set(map(lambda i: tuple(i), r_list))))
+            #print(len(rules), supp)
+            flag = len(rules) >= 100000
+            supp += supp_step
+            ds_df = ds_df[(ds_df['support'] >= supp)]
     return rules
 
 def result_dataframe(classification, prediction, num_rules = -1):

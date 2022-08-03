@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import timeit
 from termcolor import colored, cprint
+from sklearn.metrics import confusion_matrix
 from sklearn.model_selection import StratifiedKFold
 from tqdm import tqdm
 from fim import apriori, eclat, fpgrowth
@@ -18,8 +19,8 @@ import logging
 step_dict = {
     "rules_generate": 0,
     "rules_intersection": 1,
-    "rules_superset": 2,
-    "rules_subset": 3,
+    "rules_subset": 2,
+    "rules_superset": 3,
     "rules_qualify": 4,
     "test_apps": 5,
     "results_calc": 6,
@@ -30,47 +31,58 @@ def execute_fim(parameters):
     dataset = parameters[0]
     args = parameters[1]
     algorithm = args.algorithm
-    max_l = args.max_length
+    max_len = args.max_length
     dataset_type = parameters[2]
     support = parameters[3] * 100
     confidence = parameters[4] * 100
     report = 'scl'
-    str_list = ["Running FIM: Generating", dataset_type, "Association Rules.",
+    msg_list = ["Running FIM: Generating", dataset_type, "Association Rules.",
                     "Sup >> {:.2f}".format(support),
                     "Conf >> {:.2f}".format(confidence)]
-    info = ' '.join(str_list)
-    logger.info(info)
+    msg = ' '.join(msg_list)
+    logger.info(msg)
     algorithm_fim = globals()[algorithm]
-    result = algorithm_fim(dataset, target = 'r', zmin = 2, zmax = max_l,
+    rules_fim = algorithm_fim(dataset, target = 'r', zmin = 2, zmax = (max_len - 1),
                     supp = support, conf = confidence, report = report, mode = 'o')
-    r = to_pandas_dataframe(result, report)
-    r = generate_unique_rules(r, args.min_lift)
+    r = to_pandas_dataframe(rules_fim, report)
+    r = generate_unique_rules(r, args)
 
-    pct = (1.0 - (len(r)/len(result))) * 100.0 if len(result) != 0 else 0.0
-    str_list = ["Generate {}".format(len(r)), dataset_type, "Association Rules ({:.3f})".format(pct)]
-    info = ' '.join(str_list)
-    logger.info(info)
+    pct = (1.0 - (len(r)/len(rules_fim))) * 100.0 if len(rules_fim) != 0 else 0.0
+    msg_list = ["Generate {}".format(len(r)), dataset_type, "Association Rules ({:.3f})".format(pct)]
+    msg = ' '.join(msg_list)
+    logger.info(msg)
     return r
 
-def rules_subset(rule_to_check, const_parameters):
-    rules_list = const_parameters
-    is_subset = any(set(rule_to_check).issubset(r) for r in rules_list)
-    if not is_subset:
-        return rule_to_check
-    return None
-
-def rules_superset(rule_to_check, const_parameters):
+def remove_rules_subset(rule_to_check, const_parameters):
     rules_list = const_parameters[0]
-    rules_list.remove(rule_to_check)
+    if rule_to_check in rules_list:
+        rules_list.remove(rule_to_check)
     args = const_parameters[1]
-    max_l = args.max_length
-    if len(rule_to_check) == 2:
+    max_len = args.max_length
+    rule_len = len(rule_to_check)
+    if rule_len == max_len:
         return rule_to_check
-    for i in range(3, max_l + 1):
-        minors_rules = [r for r in rules_list if len(r) < i]
-        is_superset = any(set(rule_to_check).issuperset(r) for r in minors_rules)
-        if is_superset:
-            return None
+
+    major_rules = [r for r in rules_list if len(r) > rule_len and rule_to_check[0] >= r[0] and rule_to_check[-1] <= r[-1]]
+    is_subset = any(set(rule_to_check).issubset(r) for r in major_rules)
+    if is_subset:
+        return None
+    return rule_to_check
+
+def remove_rules_superset(rule_to_check, const_parameters):
+    rules_list = const_parameters[0]
+    if rule_to_check in rules_list:
+        rules_list.remove(rule_to_check)
+    args = const_parameters[1]
+    max_len = args.max_length
+    rule_len = len(rule_to_check)
+    if rule_len == 2:
+        return rule_to_check
+
+    minors_rules = [r for r in rules_list if len(r) < rule_len and rule_to_check[0] <= r[0] and rule_to_check[-1] >= r[-1]]
+    is_superset = any(set(rule_to_check).issuperset(r) for r in minors_rules)
+    if is_superset:
+        return None
     return rule_to_check
 
 def get_rules(train, args, fold_no):
@@ -138,12 +150,31 @@ def get_rules(train, args, fold_no):
 
     if stopped_step <= step_dict.get(step):
         update_log(DIR_BASE, fold_no, step)
-        logger.info("Generating Unique Rules: INTERSECTION.")
+        logger.info("Generating Unique Rules: Removing INTERSECTION.")
 
         start = timeit.default_timer()
-        rules_inter = rules_intersection(mw_rules, bw_rules)
-        mw_rules = rules_difference(mw_rules, rules_inter)
-        bw_rules = rules_difference(bw_rules, rules_inter)
+        rules_i = rules_intersection(mw_rules, bw_rules)
+        mw_rules = rules_difference(mw_rules, rules_i)
+        bw_rules = rules_difference(bw_rules, rules_i)
+        end = timeit.default_timer()
+        time_tuple = (step, end - start)
+        time_l.append(time_tuple)
+        save_data(mw_rules, bw_rules, time_l, DIR_BASE, fold_no)
+
+    step = "rules_subset"
+    if stopped_step == step_dict.get(step):
+        mw_rules, bw_rules, time_l = load_data(DIR_BASE, fold_no, stopped_step)
+
+    if stopped_step <= step_dict.get(step):
+        update_log(DIR_BASE, fold_no, step)
+
+        start = timeit.default_timer()
+        mw_rules = list(mw_rules)
+        bw_rules = list(bw_rules)
+
+        logger.info("Generating MALWARES Unique Rules: Removing SUBSETS.")
+        mw_result = parallelize_func(remove_rules_subset, mw_rules, const_parameters = [bw_rules, args])
+        mw_rules = list(filter(None, mw_result))
         end = timeit.default_timer()
         time_tuple = (step, end - start)
         time_l.append(time_tuple)
@@ -158,38 +189,14 @@ def get_rules(train, args, fold_no):
 
         start = timeit.default_timer()
         mw_rules = list(mw_rules)
-        logger.info("Generating MALWARES Unique Rules: SUPERSET.")
-        mw_result = parallelize_func(rules_superset, mw_rules, const_parameters = [mw_rules, args])
-        mw_rules = list(filter(None, mw_result))
         bw_rules = list(bw_rules)
-        logger.info("Generating BENIGNS Unique Rules: SUPERSET.")
-        bw_result = parallelize_func(rules_superset, bw_rules, const_parameters = [bw_rules, args])
-        bw_rules = list(filter(None, bw_result))
+
+        logger.info("Generating MALWARES Unique Rules: Removing SUPERSETS.")
+        mw_result = parallelize_func(remove_rules_superset, mw_rules, const_parameters = [mw_rules, args])
+        mw_rules = list(filter(None, mw_result))
         end = timeit.default_timer()
         time_tuple = (step, end - start)
         time_l.append(time_tuple)
-
-        save_data(mw_rules, bw_rules, time_l, DIR_BASE, fold_no)
-
-    step = "rules_subset"
-    if stopped_step == step_dict.get(step):
-        mw_rules, bw_rules, time_l = load_data(DIR_BASE, fold_no, stopped_step)
-
-    if stopped_step <= step_dict.get(step):
-        update_log(DIR_BASE, fold_no, step)
-
-        start = timeit.default_timer()
-        mw_rules = list(mw_rules)
-        logger.info("Generating MALWARES Unique Rules: SUBSET.")
-        mw_result = parallelize_func(rules_subset, mw_rules, const_parameters = bw_rules)
-        bw_rules = list(bw_rules)
-        logger.info("Generating BENIGNS Unique Rules: SUBSET.")
-        bw_result = parallelize_func(rules_subset, bw_rules, const_parameters = mw_rules)
-        end = timeit.default_timer()
-        time_tuple = (step, end - start)
-        time_l.append(time_tuple)
-        mw_rules = list(filter(None, mw_result))
-        bw_rules = list(filter(None, bw_result))
         save_data(mw_rules, bw_rules, time_l, DIR_BASE, fold_no)
 
     step = "finished"
@@ -197,61 +204,32 @@ def get_rules(train, args, fold_no):
     return mw_rules, bw_rules, time_l
 
 def quality_parameters(rule, const_parameters):
-    train_dataset = const_parameters[0]
-    classification = const_parameters[1]
-    features = train_dataset.drop(['class'], axis=1)
-    class_ = list(train_dataset['class'])
+    class_list = const_parameters[0]
+    train_fim = const_parameters[1]
 
-    rule_coverage = 0 # == p + n
-    p = 0
-    for i in range(0, len(train_dataset)):
-        app_ft = features.values[i,:]
-        if len(rule) == app_ft[list(rule)].sum():
-            rule_coverage += 1
-            if class_[i] == classification:
-                p += 1
+    rule_len = len(rule)
+    is_subset_list = [len(t) > rule_len and rule[0] >= t[0] and rule[-1] <= t[-1] and set(rule).issubset(t) for t in train_fim]
+    rule_coverage = sum(is_subset_list)
+    tn, fp, fn, tp = confusion_matrix(class_list, is_subset_list).ravel()
+    p = tp
     n = rule_coverage - p
     return [p, n]
 
 def quality_rules(rule_qfy_parameters, const_parameters):
-    #Dictionary For Rules Qualify Measures
-    rules_measures = {
-        'acc': r_accuracy,
-        'cov': r_coverage,
-        'prec': r_precision,
-        'ls': r_logical_sufficiency,
-        'bc': r_bayesian_confirmation,
-        'kap': r_kappa,
-        "zha": r_zhang,
-        'corr': r_correlation,
-        'c1': r_c1,
-        'c2': r_c2,
-        'wl': r_wlaplace,
-    }
-    train_dataset = const_parameters[0]
-    q_measure = const_parameters[1]
-    positive_class = const_parameters[2]
-    D = int(len(train_dataset) * 0.1) #Coverage 10%
-    P = len(train_dataset[(train_dataset['class'] == 1)])
-    N = len(train_dataset[(train_dataset['class'] == 0)])
-    if positive_class == 0:
-        P = len(train_dataset[(train_dataset['class'] == 0)])
-        N = len(train_dataset[(train_dataset['class'] == 1)])
-
-    q_func = rules_measures.get(q_measure, lambda: "Invalid Qualify Measure.")
+    P = const_parameters[0]
+    N = const_parameters[1]
+    q_function = const_parameters[2]
     rule = rule_qfy_parameters[0]
     qfy_parameters = rule_qfy_parameters[1]
     p = qfy_parameters[0]
     n = qfy_parameters[1]
-    if p > D:
-        #Execute Qualify Function
-        q = q_func(p, n, P, N)
-        rule_dict = {
-            "rule": rule,
-            "q_value": q
-        }
-        return rule_dict
-    return None
+    #Execute Qualify Function
+    q = q_function(p, n, P, N)
+    rule_quality_dict = {
+        "rule": rule,
+        "q_value": q
+    }
+    return rule_quality_dict
 
 def get_qualified_rules(train, mw_rules, bw_rules, times, args, fold_no):
     global DIR_QFY
@@ -263,8 +241,7 @@ def get_qualified_rules(train, mw_rules, bw_rules, times, args, fold_no):
     if stopped_step == step_dict.get(step):
         mw_rules = pd.read_csv(os.path.join(DIR_QFY, str(fold_no) + "_mw_rules_qualify"))
         mw_rules.rule = mw_rules.rule.apply(ast.literal_eval)
-        bw_rules = pd.read_csv(os.path.join(DIR_QFY, str(fold_no) + "_bw_rules_qualify"))
-        bw_rules.rule = bw_rules.rule.apply(ast.literal_eval)
+
         time_l = file_content(DIR_QFY, fold_no, "times")
         return mw_rules, bw_rules, time_l
 
@@ -279,36 +256,41 @@ def get_qualified_rules(train, mw_rules, bw_rules, times, args, fold_no):
         start = timeit.default_timer()
         mw_qfy_parameters = file_content(DIR_QFY, fold_no, "mw_qualify_parameters")
         if not len(mw_qfy_parameters) and mw_rules:
+            logger.info("Converting Train Dataset to FIM Format.")
+            train_list = (train.drop(['class'], axis=1)).values.tolist()
+            train_fim = to_fim_format(train_list)
             logger.info("Getting Parameters for Qualifying MALWARES Rules.")
-            qfy_parameters = parallelize_func(quality_parameters, mw_rules, const_parameters = [train, 1])
+            qfy_parameters = parallelize_func(quality_parameters, mw_rules, const_parameters = [list(train['class']), train_fim])
             save_to_file(qfy_parameters, DIR_QFY, fold_no, "mw_qualify_parameters")
-        rules_qfy_parameters = list(zip(mw_rules, qfy_parameters))
+            mw_qfy_parameters = qfy_parameters
+        rules_qfy_parameters = list(zip(mw_rules, mw_qfy_parameters))
+
+        #Dictionary For Rules Qualify Measures
+        rules_measures = {
+            'acc': q_accuracy,
+            'cov': q_coverage,
+            'prec': q_precision,
+            'ls': q_logical_sufficiency,
+            'bc': q_bayesian_confirmation,
+            'kap': q_kappa,
+            "zha": q_zhang,
+            'corr': q_correlation,
+            'c1': q_c1,
+            'c2': q_c2,
+            'wl': q_wlaplace,
+        }
+
         if rules_qfy_parameters:
+            P = len(train[(train['class'] == 1)])
+            N = len(train[(train['class'] == 0)])
+            q_function = rules_measures.get(args.qualify, lambda: "Invalid Qualify Measure.")
             logger.info("Qualifying MALWARES Rules.")
-            results = parallelize_func(quality_rules, rules_qfy_parameters, const_parameters = [train, args.qualify, 1])
-            results = list(filter(None, results))
+            results = parallelize_func(quality_rules, rules_qfy_parameters, const_parameters = [P, N, q_function])
             mw_qfy_rules = pd.DataFrame(results)
             mw_qfy_rules = mw_qfy_rules.sort_values(by = ['q_value'], ascending = False)
             mw_qfy_rules.to_csv(os.path.join(DIR_QFY, str(fold_no) + "_mw_rules_qualify"), index = False)
         else:
             logger.info("No MALWARES Rules to Qualify.")
-
-        bw_qfy_parameters = file_content(DIR_QFY, fold_no, "bw_qualify_parameters")
-        if not len(bw_qfy_parameters) and bw_rules:
-            logger.info("Getting Parameters for Qualifying BENIGNS Rules.")
-            qfy_parameters = parallelize_func(quality_parameters, bw_rules, const_parameters = [train, 0])
-            save_to_file(qfy_parameters, DIR_QFY, fold_no, "bw_qualify_parameters")
-        rules_qfy_parameters = list(zip(bw_rules, qfy_parameters))
-
-        if rules_qfy_parameters:
-            logger.info("Qualifying BENIGNS Rules.")
-            results = parallelize_func(quality_rules, rules_qfy_parameters, const_parameters = [train, args.qualify, 0])
-            results = list(filter(None, results))
-            bw_qfy_rules = pd.DataFrame(results)
-            bw_qfy_rules = bw_qfy_rules.sort_values(by = ['q_value'], ascending = False)
-            bw_qfy_rules.to_csv(os.path.join(DIR_QFY, str(fold_no) + "_bw_rules_qualify"), index = False)
-        else:
-            logger.info("No BENIGNS Rules to Qualify.")
 
         end = timeit.default_timer()
         time_tuple = (step, end - start)
@@ -324,22 +306,10 @@ def test_apps(test, const_parameters):
     bw_rules = const_parameters[1]
     app_features = test[:-1]
     count_mw_rules = 0
-    mw_qfy = 0.0
-    bw_qfy = 0.0
     for r in mw_rules.itertuples():
         s = [app_features[i] for i in r.rule]
         if len(r.rule) == sum(s):
             count_mw_rules += 1
-            q = r.q_value
-            mw_qfy = q if q > mw_qfy else mw_qfy
-    for r in bw_rules.itertuples():
-        s = [app_features[i] for i in r.rule]
-        if len(r.rule) == sum(s):
-            q = r.q_value
-            bw_qfy = q if q > bw_qfy else bw_qfy
-
-    if bw_qfy > mw_qfy:
-        count_mw_rules == 0
 
     p = count_mw_rules/len(mw_rules)
     return p
@@ -354,7 +324,8 @@ def get_results(test, mw_rules, bw_rules, times, args, fold_no):
     pct_match_rules = []
     if stopped_step <= step_dict.get(step):
         if len(mw_rules) == 0:
-            logger.warning("There Are No MALWARES Rules For Testing.")
+            msg = colored('There Are No MALWARES Rules For Testing.', 'yellow')
+            logger.warning(msg)
             return None, None, None
         logger.info("{} MALWARES Rules To Be Tested.".format(len(mw_rules)))
 
@@ -398,8 +369,8 @@ def eqar(train, test, args, fold_no):
         mw_rules, bw_rules, time_l = get_qualified_rules(train, mw_rules, bw_rules, time_l, args, fold_no)
         threshold = args.threshold if args.threshold else 0.2
         num_rules = int(len(mw_rules) * threshold)
-        mw_rules = mw_rules[:num_rules]
-        bw_rules = bw_rules[:num_rules]
+        mw_rules = mw_rules[:num_rules + 1]
+        bw_rules = bw_rules[:num_rules + 1]
     else:
         q_values = [0.0 for i in range(len(mw_rules))]
         d = {'rule': mw_rules, 'q_value': q_values}
@@ -446,6 +417,7 @@ def run(dataset, dataset_file, args):
             spn.stop()
 
         if prediction_result:
+            #print(metrics_result)
             results_df = results_df.append(metrics_result, ignore_index = True)
             times_list.append(time_result)
             general_class += list(test['class'])

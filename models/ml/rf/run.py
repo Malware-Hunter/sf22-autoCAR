@@ -5,9 +5,15 @@ import sys
 import os
 from spinner import Spinner
 from models.utils import *
+import logging
 
 #if __name__=="__main__":
 def run(dataset, dataset_file, args):
+    global logger
+    logger = logging.getLogger('RF')
+    if args.verbose:
+        logger.setLevel(logging.INFO)
+
     dataset_class = dataset['class']
 
     skf = StratifiedKFold(n_splits = 5)
@@ -22,11 +28,17 @@ def run(dataset, dataset_file, args):
         X_test = test.iloc[:,:-1] # features
         y_test = test.iloc[:,-1] # class
         clf = RandomForestClassifier(random_state = 0)
-        spn = Spinner("Executing Fold {}".format(fold_no))
-        spn.start()
+
+        logger.info("Executing Fold {}".format(fold_no))
+        if not args.verbose:
+            spn = Spinner("Executing Fold {}".format(fold_no))
+            spn.start()
+        logger.info("Model Fit.")
         clf.fit(X_train, y_train)
+        logger.info("Making Predictions.")
         prediction_result = clf.predict(X_test)
-        spn.stop()
+        if not args.verbose:
+            spn.stop()
         general_class += list(y_test)
         general_prediction += list(prediction_result)
         fold_no += 1

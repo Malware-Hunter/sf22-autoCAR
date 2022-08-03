@@ -1,16 +1,11 @@
-#!/usr/bin/python3 
+#!/usr/bin/python3
 import sys
 import os
 import argparse
 import pandas as pd
 import numpy as np
 from termcolor import colored, cprint
-import models.cbar.cba.run as cba
-import models.cbar.cpar.run as cpar
-import models.cbar.cmar.run as cmar
-import models.cbar.eqar.run as eqar
-import models.ml.rf.run as rf
-import models.ml.svm.run as svm
+from importlib import import_module
 from models.utils import *
 from spinner import Spinner
 import logging
@@ -29,8 +24,10 @@ def float_range(mini,maxi):
 
 class DefaultHelpParser(argparse.ArgumentParser):
     def error(self, message):
-        sys.stderr.write('Error: %s\n' % message)
+        global logger
         self.print_help()
+        msg = colored(message, 'red')
+        logger.error(msg)
         sys.exit(2)
 
 def parse_args(argv):
@@ -62,9 +59,9 @@ def parse_args(argv):
         '--verbose', help = "Show More Run Info.",
         action = 'store_true')
 
-    cbar_group = parser.add_mutually_exclusive_group(required = False)
+    cbar_group = parser.add_mutually_exclusive_group(required = not list_mdls)
     cbar_group.add_argument(
-        '--run-cbar', nargs = '+', metavar = 'CBAR',
+        '--run-cbar', nargs = '+', metavar = 'CBAR_MODEL',
         help = "Run Selected CBAR Models. Choices: " + str(models_dict['cbar']),
         choices = models_dict['cbar'], type = str.lower)
     cbar_group.add_argument(
@@ -72,7 +69,7 @@ def parse_args(argv):
         action = 'store_true')
     ml_group = parser.add_mutually_exclusive_group(required = False)
     ml_group.add_argument(
-        '--run-ml', nargs = '+', metavar = 'ML',
+        '--run-ml', nargs = '+', metavar = 'ML_MODEL',
         help = "Run Selected Machine Learning (ML) Models. Choices: " + str(models_dict['ml']),
         choices = models_dict['ml'], type = str.lower)
     ml_group.add_argument(
@@ -117,8 +114,8 @@ def parse_args(argv):
             type = float, default = 1.0)
         group_eqar.add_argument(
             '-t', '--threshold', metavar = 'float',
-            help = 'Percentage of Rules to be Used for Testing Samples (must be > 0.0 and < 1.0). Default: 0.1',
-            type = float_range(0.0, 1.0), default = 0.1)
+            help = 'Percentage of Rules to be Used for Testing Samples (must be > 0.0 and < 1.0). Default: 0.2',
+            type = float_range(0.0, 1.0), default = 0.2)
         q_list = ['acc', 'c1', 'c2', 'bc', 'kap', 'corr', 'cov', 'prec']
         group_eqar.add_argument(
             '-q', '--qualify', metavar = 'QUALIFY', required = not list_mdls,
@@ -177,16 +174,18 @@ def get_dir_list(dir_path):
         l.remove('__pycache__')
     return l
 
-all_results = pd.DataFrame()
-
 def run_models(dataset, dataset_file, model_type, selected_models_list, args):
     global all_results
+    global models_path
+    global logger
 
     for model in selected_models_list:
         print("Running Model", colored(model.upper(), 'green'),
                 "to Dataset", colored(dataset_file, 'green'))
         try:
-            c, p = (globals()[model]).run(dataset, dataset_file, args)
+            module = '.'.join([models_path, model_type, model, 'run'])
+            model_instance = import_module(module)
+            c, p = model_instance.run(dataset, dataset_file, args)
             if p:
                 r_df = result_dataframe(c, p)
                 print(colored(model.upper() + ' Results to Dataset ' + dataset_file, 'blue', attrs = ['bold']))
@@ -201,10 +200,10 @@ def run_models(dataset, dataset_file, model_type, selected_models_list, args):
                 all_results = pd.concat([all_results, r_df], ignore_index = True)
             else:
                 msg = colored('No ' + model.upper() + ' Results to Dataset ' + dataset_file + '.', 'yellow')
-                logging.warning(msg)
+                logger.warning(msg)
         except BaseException as e:
-            msg = colored('Exception in ' + model_type.upper() + " " + model.upper() + ': {}'.format(e), 'red')
-            logging.error(msg)
+            msg = colored('Exception in Execution of ' + model_type.upper() + " " + model.upper() + ': {}'.format(e), 'red')
+            logger.error(msg)
 
 def get_models():
     d = {}
@@ -263,7 +262,7 @@ def graph_class(dataset_file, output_dir):
     path_graph_file = os.path.join(output_dir, graph_file)
     ax.figure.savefig(path_graph_file)
 
-def graph_roc(dataset_file, output_dir):
+def graph_roc_auc(dataset_file, output_dir):
     global all_results
     if all_results.empty:
         return
@@ -302,15 +301,22 @@ if __name__=="__main__":
     global models_type
     global models_dict
     global models_output_files
+    global logger
+    global all_results
+    logger = logging.getLogger('AutoCAR')
     models_path = 'models'
     models_type = get_dir_list(models_path)
     models_dict = get_models()
+    all_results = pd.DataFrame()
 
     global graphics_type
-    graphics_type = ['metrics', 'roc', 'class']
+    graphics_type = ['metrics', 'roc_auc', 'class']
 
     args = parse_args(sys.argv[1:])
     print(args)
+
+    if args.verbose:
+        logger.setLevel(logging.INFO)
 
     if args.list_models:
         list_models(args.list_models)
@@ -323,7 +329,7 @@ if __name__=="__main__":
         check_directory(root_path, output_dir)
     else:
         msg = colored("Exception: Directory Name Not Allowed.", 'red')
-        logging.error(msg)
+        logger.error(msg)
         exit(1)
 
     dataset_file_list = args.datasets
@@ -332,7 +338,7 @@ if __name__=="__main__":
             dataset = pd.read_csv(dataset_file)
         except BaseException as e:
             msg = colored("Exception: {}".format(e), 'red')
-            logging.error(msg)
+            logger.error(msg)
             exit(1)
 
         if args.use_balanced_datasets:
@@ -346,10 +352,13 @@ if __name__=="__main__":
                 selected_models_list = models_dict[model_type]
                 run_models(dataset, dataset_file, model_type, selected_models_list, args)
 
+        results_file_path = os.path.join(args.output_dir, "general_results.csv")
+        all_results.to_csv(results_file_path, index = False)
+
         if args.plot_graph:
             for g in args.plot_graph:
                 (globals()['graph_' + g])(dataset_file, args.output_dir)
         else:
             graph_metrics(dataset_file, args.output_dir)
             graph_class(dataset_file, args.output_dir)
-            graph_roc(dataset_file, args.output_dir)
+            graph_roc_auc(dataset_file, args.output_dir)
