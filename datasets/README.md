@@ -1,4 +1,4 @@
-# Conjuntos de Dados (Datastes).
+# Conjuntos de Dados (Datasets).
 
 |           Dataset           | Características | Maliciosos | Benignos | Total |
 |:---------------------------:|:---------------:|:----------:|:--------:|:-----:|
