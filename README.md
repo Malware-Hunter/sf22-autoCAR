@@ -1,8 +1,8 @@
 # AutoCAR
 
-### Environment
+# Environment
 
-The tool has been tested and used in practice in the following environments:
+The tool has been tested in the following environments:
 
 **Ubuntu 20.04**
 
@@ -12,11 +12,9 @@ The tool has been tested and used in practice in the following environments:
 - Java = `openjdk 17.0.3 2022-04-19`
 
 
-For Installation, Follow Instructions in **How to Install** Section or Run `setup.sh` Script.
+# How to Install
 
-### How to Install
-
-**0. Requirements**
+**Requirements**
 
 - Install R (How to in [CRAN](https://cran.r-project.org/) - Last Acess 17/July/2022):
     ```sh
@@ -28,14 +26,14 @@ For Installation, Follow Instructions in **How to Install** Section or Run `setu
     $ sudo apt install --no-install-recommends r-base
     ```
 
-- Install Required Python Libraries:
+- Install required Python libraries:
     ```sh
     $ pip install -r requirements.txt
     ```
 
-- Install R Package **arulesCBA**
+- Install R package **arulesCBA**
 
-  **Stable CRAN version:** Install From Within R With
+  **Stable CRAN version:** Install from within R using the following command
 
     ``` r
     install.packages("arulesCBA")
@@ -48,43 +46,43 @@ For Installation, Follow Instructions in **How to Install** Section or Run `setu
     install.packages("arulesCBA", repos = "https://mhahsler.r-universe.dev")
     ```
 
-### Example Usage
+# Usage examples 
 
-- List Models:
+- List available models:
 
-  List Models in Machine Learning (ml) Directory
+  List all machine learning (ml) models
     ```sh
     $ autocar.py --list-models ml
     ```
 
-  List Models in Association Rules (cbar) and Machine Learning (ml) Directories
+  List all classification based on association rules (cbar) models
     ```sh
-    $ autocar.py --list-models cbar ml
+    $ autocar.py --list-models cbar
     ```
 
-  List All Models
+  List all available models
     ```sh
     $ autocar.py --list-models-all
     ```
 
-- Run Models:
+- Running models:
 
-  Run Models **CBA** and **EQAR** With Dataset **drebin215.csv** Using Minimum Support at 10% and Rule Quality **prec**
+  Run models **CBA** and **EQAR** for the **drebin215.csv** dataset with minimum support at 10% and rule quality **prec**
     ```sh
     $ autocar.py --run-cbar cba eqar --datasets drebin215.csv -s 0.1 -q prec
     ```
 
-  Run Models **CPAR** and **SVM** With Datasets **drebin215.csv** and **androit.csv** Using Balanced Datasets
+  Run models **CPAR** and **SVM** for the **drebin215.csv** and **androit.csv** datasets and automatically balance (i.e., same number of malign and benign samples) each of them
     ```sh
     $ autocar.py --run-cbar cpar --rum-ml svm --datasets drebin215.csv androit.csv --use-balanced-datasets
     ```
 
-  Run All **CBAR** Models With Dataset **drebin215.csv** Using Minimum Support at 20% and Rule Quality **prec**, Generating **Classification** and **Metrics** Graphs
+  Run all **CBAR** models for the **drebin215.csv** dataset, minimum support at 20%, rule quality **prec** and generate **classification** and **metrics** graphs
     ```sh
     $ autocar.py --run-cbar-all --datasets drebin215.csv -s 0.2 -q prec --plot-graph class metrics
     ```
 
-  Run All **CBAR** and **ML** Models With All Datasets in **datasets** Directory Using Threshold at 20%, Rule Quality **prec**, Saving Results and Graphs in **outputs** Directory
+  Run all **CBAR** and **ML** models for all datasets within the **datasets** directory using threshold at 20%, rule quality **prec**, saving numeric results and graphs in the **outputs** directory
     ```sh
     $ autocar.py --run-cbar-all --run-ml-all --datasets datasets/*.csv -t 0.2 -q prec --output-dir outputs
     ```
