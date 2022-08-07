@@ -46,7 +46,7 @@ The tool has been tested in the following environments:
     install.packages("arulesCBA", repos = "https://mhahsler.r-universe.dev")
     ```
 
-# Usage examples 
+# Usage examples
 
 - List available models:
 
@@ -85,4 +85,23 @@ The tool has been tested in the following environments:
   Run all **CBAR** and **ML** models for all datasets within the **datasets** directory using threshold at 20%, rule quality **prec**, saving numeric results and graphs in the **outputs** directory
     ```sh
     $ autocar.py --run-cbar-all --run-ml-all --datasets datasets/*.csv -t 0.2 -q prec --output-dir outputs
+    ```
+
+# Include new models
+
+To allow the easy and fast integration of other models to the tool, we use a structure of directories and files similar to the libraries used in **gcc** on Linux. For example, adding a new model only requires a new sub-directory within **models** directory and a default invocation file (i.e., **run.py**), whose function **run** must receive as input arguments the dataset and the tool parameters (e.g., prefix of the output files).
+In each sub-directory, files such as **about.desc**, which describes the new model for AutoCAR, can also be added.
+Once these minimum requirements are met, new method or model is automatically available, as a new execution parameter, in the tool.
+
+- Example: add model of type **CBAR** identified as **ARM**
+  - Create in directory **models/cbar/** a sub-directory **arm**
+  - In **models/cbar/arm/** create file **about.desc** with the description of the new model
+    ```txt
+      ARM: Association Rules Model
+    ```
+  - Create **run.py** Python script with **run** function and necessary input and output parameters
+    ```python
+      def run(dataset, dataset_file, args):
+        . . .
+        return general_class, general_prediction
     ```
