@@ -47,22 +47,33 @@ For Installation, Follow Instructions in **How to Install** Section or Run `setu
     install.packages("arulesCBA", repos = "https://mhahsler.r-universe.dev")
     ```
 
-# sf22_classification_based_on_association_rules
+### Example Usage
 
-Ferramenta para automatizar e simplificar a execução dos modelos de classificação baseados em regras de associação. A ferramenta também deverá executar pelo menos dois modelos de aprendizado suporvisionados, para fins de comparação (e.g., SVM e RF).
+- List Models:
 
-Primeiras ideias:
-(1) a ferramenta deve ser capaz de executar o modelo selecionado pelo usuário;
-(2) a ferramenta deve ser flexível e simples para incorporar novos modelos de classificação (e.g., 1 diretório e 1 script de bootstrap por método);
-(4) a ferramenta irá apresentar o resultado das métricas dos modelos;
-(5) a ferramenta deve permitir especificar:
-- o dataset de entrada;
-- o prefixo dos arquivos de saída dos modelos;
-(6) a ferramenta poderá também gerar automaticamente gráficos ou tabelas das saídas dos modelos;
+  List Models in Machine Learning (ml) Directory
+    ```sh
+    $ autocar.py --list-models ml
+    ```
 
-Exemplos de parâmetros e execução:
+  List Models in Association Rules (cbar) and Machine Learning (ml) Directories
+    ```sh
+    $ autocar.py --list-models ml
+    ```
 
-tool.py --list-cbar-models --list-ml-models
+  List All Models
+    ```sh
+    $ autocar.py --list-models-all
+    ```
+
+- Run Models:
+
+  Run Models **CBA** and **EQAR** With dataset **drebin215.csv** Using Minimum Support at 10% and Rule Quality **prec**
+    ```sh
+    $ autocar.py --run-cbar cba eqar --datasets drebin215.csv -s 0.1 -q prec
+    ```
+
+
 
 tool.py --run-cbar-cba --run-cbar-eqar --run-ml-rf --run-ml-svm --output-cbar-cba cba.csv --output-cbar-eqar eqar.csv --output-ml-rf rf.csv --output-ml-svm svm.csv --plot-graph-all --dataset motodroid.csv
 
