@@ -58,7 +58,7 @@ For Installation, Follow Instructions in **How to Install** Section or Run `setu
 
   List Models in Association Rules (cbar) and Machine Learning (ml) Directories
     ```sh
-    $ autocar.py --list-models ml
+    $ autocar.py --list-models cbar ml
     ```
 
   List All Models
@@ -68,15 +68,22 @@ For Installation, Follow Instructions in **How to Install** Section or Run `setu
 
 - Run Models:
 
-  Run Models **CBA** and **EQAR** With dataset **drebin215.csv** Using Minimum Support at 10% and Rule Quality **prec**
+  Run Models **CBA** and **EQAR** With Dataset **drebin215.csv** Using Minimum Support at 10% and Rule Quality **prec**
     ```sh
     $ autocar.py --run-cbar cba eqar --datasets drebin215.csv -s 0.1 -q prec
     ```
 
+  Run Models **CPAR** and **SVM** With Datasets **drebin215.csv** and **androit.csv** Using Balanced Datasets
+    ```sh
+    $ autocar.py --run-cbar cpar --rum-ml svm --datasets drebin215.csv androit.csv --use-balanced-datasets
+    ```
 
+  Run All **CBAR** Models With Dataset **drebin215.csv** Using Minimum Support at 20% and Rule Quality **prec**, Generating **classification** and **Metrics** Graphs
+    ```sh
+    $ autocar.py --run-cbar-all --datasets drebin215.csv -s 0.2 -q prec --plot_graph class metrics
+    ```
 
-tool.py --run-cbar-cba --run-cbar-eqar --run-ml-rf --run-ml-svm --output-cbar-cba cba.csv --output-cbar-eqar eqar.csv --output-ml-rf rf.csv --output-ml-svm svm.csv --plot-graph-all --dataset motodroid.csv
-
-tool.py --run-cbar-all --run-ml-all --plot-graph-all --datasets motodroid.csv androcrawl.csv drebin215.csv
-
-tool.py --run-cbar-all --run-ml-all --plot-graph-all --datasets-all
+  Run All **CBAR** and **ML** Models With All Datasets in **datasets** Directory Using Threshold at 20%, Rule Quality **prec** and Saving in **outputs** Directory
+    ```sh
+    $ autocar.py --run-cbar-all --run-ml-all --datasets datasets/*.csv -t 0.2 -q prec --output-dir outputs
+    ```
