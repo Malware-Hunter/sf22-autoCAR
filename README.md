@@ -95,13 +95,14 @@ Once these minimum requirements are met, new method or model is automatically av
 
 - Example: add model of type **CBAR** identified as **ARM**
   - Create in directory **models/cbar/** a sub-directory **arm**
-  - In **models/cbar/arm/** create file **about.desc** with the description of the new model
+  - In **models/cbar/arm/**
+    - Create file **about.desc** with the description of the new model
     ```txt
-      ARM: Association Rules Model
+    ARM: Association Rules Model
     ```
-  - Create **run.py** Python script with **run** function and necessary input and output parameters
+    - Create **run.py** Python script with **run** function and necessary input and output parameters
     ```python
-      def run(dataset, dataset_file, args):
-        . . .
-        return general_class, general_prediction
+    def run(dataset, dataset_file, args):
+      . . .
+      return general_class, general_prediction
     ```
