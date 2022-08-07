@@ -8,7 +8,8 @@ The tool has been tested and used in practice in the following environments:
 
 - Kernel = `Linux version 5.4.0-120-generic (buildd@lcy02-amd64-006) (gcc version 9.4.0 (Ubuntu 9.4.0-1ubuntu1~20.04.1)) #136-Ubuntu SMP Fri Jun 10 13:40:48 UTC 2022`
 - Python = `Python 3.8.10`
-- R 4.2.1
+- R = `R 4.2.1`
+- Java = `openjdk 17.0.3 2022-04-19`
 
 
 For Installation, Follow Instructions in **How to Install** Section or Run `setup.sh` Script.
@@ -80,7 +81,7 @@ For Installation, Follow Instructions in **How to Install** Section or Run `setu
 
   Run All **CBAR** Models With Dataset **drebin215.csv** Using Minimum Support at 20% and Rule Quality **prec**, Generating **classification** and **Metrics** Graphs
     ```sh
-    $ autocar.py --run-cbar-all --datasets drebin215.csv -s 0.2 -q prec --plot_graph class metrics
+    $ autocar.py --run-cbar-all --datasets drebin215.csv -s 0.2 -q prec --plot-graph class metrics
     ```
 
   Run All **CBAR** and **ML** Models With All Datasets in **datasets** Directory Using Threshold at 20%, Rule Quality **prec** and Saving in **outputs** Directory
