@@ -79,12 +79,12 @@ For Installation, Follow Instructions in **How to Install** Section or Run `setu
     $ autocar.py --run-cbar cpar --rum-ml svm --datasets drebin215.csv androit.csv --use-balanced-datasets
     ```
 
-  Run All **CBAR** Models With Dataset **drebin215.csv** Using Minimum Support at 20% and Rule Quality **prec**, Generating **classification** and **Metrics** Graphs
+  Run All **CBAR** Models With Dataset **drebin215.csv** Using Minimum Support at 20% and Rule Quality **prec**, Generating **Classification** and **Metrics** Graphs
     ```sh
     $ autocar.py --run-cbar-all --datasets drebin215.csv -s 0.2 -q prec --plot-graph class metrics
     ```
 
-  Run All **CBAR** and **ML** Models With All Datasets in **datasets** Directory Using Threshold at 20%, Rule Quality **prec** and Saving in **outputs** Directory
+  Run All **CBAR** and **ML** Models With All Datasets in **datasets** Directory Using Threshold at 20%, Rule Quality **prec**, Saving Results and Graphs in **outputs** Directory
     ```sh
     $ autocar.py --run-cbar-all --run-ml-all --datasets datasets/*.csv -t 0.2 -q prec --output-dir outputs
     ```

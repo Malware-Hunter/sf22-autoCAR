@@ -2,7 +2,7 @@
 
 ### Full
 
-|           Dataset           | Features | Maleares | Benigns | Total |
+|           Dataset           | Features | Malwares | Benigns | Total |
 |:---------------------------:|:---------------:|:----------:|:--------:|:-----:|
 |          AndroCrawl         |        81       |    10170   |   86562  | 96732 |
 |           ANDROIT           |       166       |    3418    |   8058   | 11476 |
