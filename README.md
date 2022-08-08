@@ -95,11 +95,11 @@ Once these minimum requirements are met, the new method or model is automaticall
 
 Step-by-step example: let's assume we are adding a new **CBAR** model named **ARM**
 
-  - Step 1: 
+  - Step 1: creating ARM's directory
     ```sh
     $ mkdir models/cbar/arm
     ```
-  - Step 2: 
+  - Step 2: adding ARM's short description
     ```sh
     $ vim models/cbar/arm/about.desc
     ```
@@ -107,13 +107,17 @@ Step-by-step example: let's assume we are adding a new **CBAR** model named **AR
     ```txt
     ARM: Association Rules Model
     ```
-  - Step 3: 
+  - Step 3: setting up **run.py**
     ```sh
     $ vim models/cbar/arm/run.py
     ```
     example of **run.py** content:
     ```python
     def run(dataset, dataset_file, args):
-      # ... normal code of the model goes here ...
+      # ... ARM's calling code goes here ...
       return general_class, general_prediction
+    ```
+  - Step 4: copy ARM's entire implementation 
+    ```sh
+    $ cp -ra path/ARM/src models/cbar/arm/
     ```
