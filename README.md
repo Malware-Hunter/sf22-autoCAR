@@ -14,8 +14,6 @@ The tool has been tested in the following environments:
 
 # How-To Install
 
-**Requirements**
-
 - Step 1: installing R (How to in [CRAN](https://cran.r-project.org/) - Last Acess 17/July/2022):
     ```sh
     $ apt-get update
@@ -51,16 +49,19 @@ The tool has been tested in the following environments:
 ### Listing
 
   Listing all machine learning (ml) models
+
     ```sh
     $ autocar.py --list-models ml
     ```
 
   Listing all classification based on association rules (cbar) models
+
     ```sh
     $ autocar.py --list-models cbar
     ```
 
   Listing all available models
+
     ```sh
     $ autocar.py --list-models-all
     ```
@@ -68,21 +69,25 @@ The tool has been tested in the following environments:
 ### Running 
 
   Running models **CBA** and **EQAR** for the **drebin215.csv** dataset with minimum support at 10% and rule quality **prec**
+
     ```sh
     $ autocar.py --run-cbar cba eqar --datasets drebin215.csv -s 0.1 -q prec
     ```
 
   Running models **CPAR** and **SVM** for the **drebin215.csv** and **androit.csv** datasets and automatically balance (i.e., same number of malign and benign samples) each of them
+
     ```sh
     $ autocar.py --run-cbar cpar --rum-ml svm --datasets drebin215.csv androit.csv --use-balanced-datasets
     ```
 
   Running all **CBAR** models for the **drebin215.csv** dataset, minimum support at 20%, rule quality **prec** and generate **classification** and **metrics** graphs
+
     ```sh
     $ autocar.py --run-cbar-all --datasets drebin215.csv -s 0.2 -q prec --plot-graph class metrics
     ```
 
   Running all **CBAR** and **ML** models for all datasets within the **datasets** directory using threshold at 20%, rule quality **prec**, saving numeric results and graphs in the **outputs** directory
+
     ```sh
     $ autocar.py --run-cbar-all --run-ml-all --datasets datasets/*.csv -t 0.2 -q prec --output-dir outputs
     ```
