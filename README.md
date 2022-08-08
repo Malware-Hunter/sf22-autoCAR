@@ -37,7 +37,7 @@ The tool has been tested in the following environments:
     install.packages("arulesCBA")
     ```
 
-  **(alternativa) Current development version:** Install From
+  **(alternative) Current development version:** Install From
     [r-universe.](https://mhahsler.r-universe.dev/ui#package:arulesCBA)
 
     ``` r
@@ -48,20 +48,17 @@ The tool has been tested in the following environments:
 
 ### Listing
 
-  Listing all machine learning (ml) models
-
+  - all machine learning (ml) models
     ```sh
     $ autocar.py --list-models ml
     ```
 
-  Listing all classification based on association rules (cbar) models
-
+  - all classification based on association rules (cbar) models
     ```sh
     $ autocar.py --list-models cbar
     ```
 
-  Listing all available models
-
+  - all available models
     ```sh
     $ autocar.py --list-models-all
     ```
