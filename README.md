@@ -85,7 +85,7 @@ The tool has been tested in the following environments:
     $ autocar.py --run-cbar-all --run-ml-all --datasets datasets/*.csv -t 0.2 -q prec --output-dir outputs
     ```
 
-## How-To Add New Models
+## How-To add new models
 
 To allow the easy and fast integration of new models to our tool, we use a structure of directories and files similar to the libraries used by **gcc** on Linux systems. For example, adding a new model requires just a new sub-directory within **models** directory and a default invocation file (i.e., **run.py**), whose function **run** must receive as input arguments the dataset and other parameters (e.g., prefix of the output files).
 In each sub-directory, **about.desc** files can be added to describes the new model for our tool. 
