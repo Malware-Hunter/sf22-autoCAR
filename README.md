@@ -93,7 +93,8 @@ To allow the easy and fast integration of new models to our tool, we use a struc
 In each sub-directory, **about.desc** files can be added to describes the new model for our tool. 
 Once these minimum requirements are met, the new method or model is automatically available, as a new execution parameter, in our tool.
 
-- Step-by-step example: let's assume we are adding a new **CBAR** model named **ARM**
+Step-by-step example: let's assume we are adding a new **CBAR** model named **ARM**
+
   - Step 1: 
     ```sh
     $ mkdir models/cbar/arm
