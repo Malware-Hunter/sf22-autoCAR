@@ -12,11 +12,11 @@ The tool has been tested in the following environments:
 - Java = `openjdk 17.0.3 2022-04-19`
 
 
-# How to Install
+# How-To Install
 
 **Requirements**
 
-- Install R (How to in [CRAN](https://cran.r-project.org/) - Last Acess 17/July/2022):
+- Step 1: installing R (How to in [CRAN](https://cran.r-project.org/) - Last Acess 17/July/2022):
     ```sh
     $ apt-get update
     $ sudo apt install --no-install-recommends software-properties-common dirmngr
@@ -26,12 +26,12 @@ The tool has been tested in the following environments:
     $ sudo apt install --no-install-recommends r-base
     ```
 
-- Install required Python libraries:
+- Step 2: installing Python requirements:
     ```sh
     $ pip install -r requirements.txt
     ```
 
-- Install R package **arulesCBA**
+- Step 3: installing R package **arulesCBA**
 
   **Stable CRAN version:** Install from within R using the following command
 
@@ -39,7 +39,7 @@ The tool has been tested in the following environments:
     install.packages("arulesCBA")
     ```
 
-  **Current development version:** Install From
+  **(alternativa) Current development version:** Install From
     [r-universe.](https://mhahsler.r-universe.dev/ui#package:arulesCBA)
 
     ``` r
@@ -65,44 +65,54 @@ The tool has been tested in the following environments:
     $ autocar.py --list-models-all
     ```
 
-- Running models:
+- How-To Run models:
 
-  Run models **CBA** and **EQAR** for the **drebin215.csv** dataset with minimum support at 10% and rule quality **prec**
+  Running models **CBA** and **EQAR** for the **drebin215.csv** dataset with minimum support at 10% and rule quality **prec**
     ```sh
     $ autocar.py --run-cbar cba eqar --datasets drebin215.csv -s 0.1 -q prec
     ```
 
-  Run models **CPAR** and **SVM** for the **drebin215.csv** and **androit.csv** datasets and automatically balance (i.e., same number of malign and benign samples) each of them
+  Running models **CPAR** and **SVM** for the **drebin215.csv** and **androit.csv** datasets and automatically balance (i.e., same number of malign and benign samples) each of them
     ```sh
     $ autocar.py --run-cbar cpar --rum-ml svm --datasets drebin215.csv androit.csv --use-balanced-datasets
     ```
 
-  Run all **CBAR** models for the **drebin215.csv** dataset, minimum support at 20%, rule quality **prec** and generate **classification** and **metrics** graphs
+  Running all **CBAR** models for the **drebin215.csv** dataset, minimum support at 20%, rule quality **prec** and generate **classification** and **metrics** graphs
     ```sh
     $ autocar.py --run-cbar-all --datasets drebin215.csv -s 0.2 -q prec --plot-graph class metrics
     ```
 
-  Run all **CBAR** and **ML** models for all datasets within the **datasets** directory using threshold at 20%, rule quality **prec**, saving numeric results and graphs in the **outputs** directory
+  Running all **CBAR** and **ML** models for all datasets within the **datasets** directory using threshold at 20%, rule quality **prec**, saving numeric results and graphs in the **outputs** directory
     ```sh
     $ autocar.py --run-cbar-all --run-ml-all --datasets datasets/*.csv -t 0.2 -q prec --output-dir outputs
     ```
 
-# Include new models
+# How-To Add New Models
 
-To allow the easy and fast integration of other models to the tool, we use a structure of directories and files similar to the libraries used in **gcc** on Linux. For example, adding a new model only requires a new sub-directory within **models** directory and a default invocation file (i.e., **run.py**), whose function **run** must receive as input arguments the dataset and the tool parameters (e.g., prefix of the output files).
-In each sub-directory, files such as **about.desc**, which describes the new model for AutoCAR, can also be added.
-Once these minimum requirements are met, new method or model is automatically available, as a new execution parameter, in the tool.
+To allow the easy and fast integration of new models to our tool, we use a structure of directories and files similar to the libraries used by **gcc** on Linux systems. For example, adding a new model requires just a new sub-directory within **models** directory and a default invocation file (i.e., **run.py**), whose function **run** must receive as input arguments the dataset and other parameters (e.g., prefix of the output files).
+In each sub-directory, **about.desc** files can be added to describes the new model for our tool. 
+Once these minimum requirements are met, the new method or model is automatically available, as a new execution parameter, in our tool.
 
-- Example: add model of type **CBAR** identified as **ARM**
-  - Create in directory **models/cbar/** a sub-directory **arm**
-  - In **models/cbar/arm/**
-    - Create file **about.desc** with the description of the new model
+- Step-by-step example: let's assume we are adding a new **CBAR** model named **ARM**
+  - Step 1: 
+    ```sh
+    $ mkdir models/cbar/arm
+    ```
+  - Step 2: 
+    ```sh
+    $ vim models/cbar/arm/about.desc
+    ```
+    example of **about.desc** content:
     ```txt
     ARM: Association Rules Model
     ```
-    - Create **run.py** Python script with **run** function and necessary input and output parameters
+  - Step 3: 
+    ```sh
+    $ vim models/cbar/arm/run.py
+    ```
+    example of **run.py** content:
     ```python
     def run(dataset, dataset_file, args):
-      . . .
+      # ... normal code of the model goes here ...
       return general_class, general_prediction
     ```
