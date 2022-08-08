@@ -48,24 +48,24 @@ The tool has been tested in the following environments:
 
 # Usage examples
 
-- List available models:
+### Listing
 
-  List all machine learning (ml) models
+  Listing all machine learning (ml) models
     ```sh
     $ autocar.py --list-models ml
     ```
 
-  List all classification based on association rules (cbar) models
+  Listing all classification based on association rules (cbar) models
     ```sh
     $ autocar.py --list-models cbar
     ```
 
-  List all available models
+  Listing all available models
     ```sh
     $ autocar.py --list-models-all
     ```
 
-- How-To Run models:
+### Running 
 
   Running models **CBA** and **EQAR** for the **drebin215.csv** dataset with minimum support at 10% and rule quality **prec**
     ```sh
