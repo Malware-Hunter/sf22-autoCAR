@@ -1,6 +1,6 @@
 # AutoCAR
 
-# Environment
+## Environment
 
 The tool has been tested in the following environments:
 
@@ -12,7 +12,7 @@ The tool has been tested in the following environments:
 - Java = `openjdk 17.0.3 2022-04-19`
 
 
-# How-To Install
+## How-To Install
 
 - Step 1: installing R (How to in [CRAN](https://cran.r-project.org/) - Last Acess 17/July/2022):
     ```sh
@@ -44,7 +44,7 @@ The tool has been tested in the following environments:
     install.packages("arulesCBA", repos = "https://mhahsler.r-universe.dev")
     ```
 
-# Usage examples
+## Usage examples
 
 ### Listing
 
@@ -85,7 +85,7 @@ The tool has been tested in the following environments:
     $ autocar.py --run-cbar-all --run-ml-all --datasets datasets/*.csv -t 0.2 -q prec --output-dir outputs
     ```
 
-# How-To Add New Models
+## How-To Add New Models
 
 To allow the easy and fast integration of new models to our tool, we use a structure of directories and files similar to the libraries used by **gcc** on Linux systems. For example, adding a new model requires just a new sub-directory within **models** directory and a default invocation file (i.e., **run.py**), whose function **run** must receive as input arguments the dataset and other parameters (e.g., prefix of the output files).
 In each sub-directory, **about.desc** files can be added to describes the new model for our tool. 
