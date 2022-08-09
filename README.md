@@ -1,23 +1,20 @@
 # AutoCAR
 
-### Environment
+## Environment
 
-The tool has been tested and used in practice in the following environments:
+The tool has been tested in the following environments:
 
 **Ubuntu 20.04**
 
 - Kernel = `Linux version 5.4.0-120-generic (buildd@lcy02-amd64-006) (gcc version 9.4.0 (Ubuntu 9.4.0-1ubuntu1~20.04.1)) #136-Ubuntu SMP Fri Jun 10 13:40:48 UTC 2022`
 - Python = `Python 3.8.10`
-- R 4.2.1
+- R = `R 4.2.1`
+- Java = `openjdk 17.0.3 2022-04-19`
 
 
-For Installation, Follow Instructions in **How to Install** Section or Run `setup.sh` Script.
+## How-To Install
 
-### How to Install
-
-**0. Requirements**
-
-- Install R (How to in [CRAN](https://cran.r-project.org/) - Last Acess 17/July/2022):
+- Step 1: installing R (How to in [CRAN](https://cran.r-project.org/) - Last Acess 17/July/2022):
     ```sh
     $ apt-get update
     $ sudo apt install --no-install-recommends software-properties-common dirmngr
@@ -27,45 +24,98 @@ For Installation, Follow Instructions in **How to Install** Section or Run `setu
     $ sudo apt install --no-install-recommends r-base
     ```
 
-- Install Required Python Libraries:
+- Step 2: installing Python requirements:
     ```sh
     $ pip install -r requirements.txt
     ```
 
-- Install R Package **arulesCBA**
+- Step 3: installing R package **arulesCBA**
 
-  **Stable CRAN version:** Install From Within R With
+  **Stable CRAN version:** Install from within R using the following command
 
     ``` r
     install.packages("arulesCBA")
     ```
 
-  **Current development version:** Install From
+  **(alternative) Current development version:** Install From
     [r-universe.](https://mhahsler.r-universe.dev/ui#package:arulesCBA)
 
     ``` r
     install.packages("arulesCBA", repos = "https://mhahsler.r-universe.dev")
     ```
 
-# sf22_classification_based_on_association_rules
+## Usage examples
 
-Ferramenta para automatizar e simplificar a execução dos modelos de classificação baseados em regras de associação. A ferramenta também deverá executar pelo menos dois modelos de aprendizado suporvisionados, para fins de comparação (e.g., SVM e RF).
+### Listing
 
-Primeiras ideias:
-(1) a ferramenta deve ser capaz de executar o modelo selecionado pelo usuário;
-(2) a ferramenta deve ser flexível e simples para incorporar novos modelos de classificação (e.g., 1 diretório e 1 script de bootstrap por método);
-(4) a ferramenta irá apresentar o resultado das métricas dos modelos;
-(5) a ferramenta deve permitir especificar:
-- o dataset de entrada;
-- o prefixo dos arquivos de saída dos modelos;
-(6) a ferramenta poderá também gerar automaticamente gráficos ou tabelas das saídas dos modelos;
+  - all machine learning (ml) models
+    ```sh
+    $ autocar.py --list-models ml
+    ```
 
-Exemplos de parâmetros e execução:
+  - all classification based on association rules (cbar) models
+    ```sh
+    $ autocar.py --list-models cbar
+    ```
 
-tool.py --list-cbar-models --list-ml-models
+  - all available models
+    ```sh
+    $ autocar.py --list-models-all
+    ```
 
-tool.py --run-cbar-cba --run-cbar-eqar --run-ml-rf --run-ml-svm --output-cbar-cba cba.csv --output-cbar-eqar eqar.csv --output-ml-rf rf.csv --output-ml-svm svm.csv --plot-graph-all --dataset motodroid.csv
+### Running 
 
-tool.py --run-cbar-all --run-ml-all --plot-graph-all --datasets motodroid.csv androcrawl.csv drebin215.csv
+  - models **CBA** and **EQAR** for the **drebin215.csv** dataset with minimum support at 10% and rule quality **prec**
+    ```sh
+    $ autocar.py --run-cbar cba eqar --datasets drebin215.csv -s 0.1 -q prec
+    ```
 
-tool.py --run-cbar-all --run-ml-all --plot-graph-all --datasets-all
+  - models **CPAR** and **SVM** for the **drebin215.csv** and **androit.csv** datasets and automatically balance (i.e., same number of malign and benign samples) each of them
+    ```sh
+    $ autocar.py --run-cbar cpar --rum-ml svm --datasets drebin215.csv androit.csv --use-balanced-datasets
+    ```
+
+  - all **CBAR** models for the **drebin215.csv** dataset, minimum support at 20%, rule quality **prec** and generate **classification** and **metrics** graphs
+    ```sh
+    $ autocar.py --run-cbar-all --datasets drebin215.csv -s 0.2 -q prec --plot-graph class metrics
+    ```
+
+  - all **CBAR** and **ML** models for all datasets within the **datasets** directory using threshold at 20%, rule quality **prec**, saving numeric results and graphs in the **outputs** directory
+    ```sh
+    $ autocar.py --run-cbar-all --run-ml-all --datasets datasets/*.csv -t 0.2 -q prec --output-dir outputs
+    ```
+
+## How-To add new models
+
+To allow the easy and fast integration of new models to our tool, we use a structure of directories and files similar to the libraries used by **gcc** on Linux systems. For example, adding a new model requires just a new sub-directory within **models** directory and a default invocation file (i.e., **run.py**), whose function **run** must receive as input arguments the dataset and other parameters (e.g., prefix of the output files).
+In each sub-directory, **about.desc** files can be added to describes the new model for our tool. 
+Once these minimum requirements are met, the new method or model is automatically available, as a new execution parameter, in our tool.
+
+Step-by-step example: let's assume we are adding a new **CBAR** model named **ARM**
+
+  - Step 1: creating ARM's directory
+    ```sh
+    $ mkdir models/cbar/arm
+    ```
+  - Step 2: adding ARM's short description
+    ```sh
+    $ vim models/cbar/arm/about.desc
+    ```
+    example of **about.desc** content:
+    ```txt
+    ARM: Association Rules Model
+    ```
+  - Step 3: setting up **run.py**
+    ```sh
+    $ vim models/cbar/arm/run.py
+    ```
+    example of **run.py** content:
+    ```python
+    def run(dataset, dataset_file, args):
+      # ... ARM's calling code goes here ...
+      return general_class, general_prediction
+    ```
+  - Step 4: copy ARM's entire implementation 
+    ```sh
+    $ cp -ra path/ARM/src models/cbar/arm/
+    ```

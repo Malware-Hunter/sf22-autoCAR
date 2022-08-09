@@ -65,6 +65,5 @@ def balanced_dataset(dataset):
 
 def check_directory(root_path, dir_name):
     dir_path = os.path.join(root_path, dir_name)
-    if os.path.exists(dir_path):
-        shutil.rmtree(dir_path)
-    os.makedirs(dir_name)
+    if not os.path.exists(dir_path):
+        os.makedirs(dir_name)

@@ -1,4 +1,5 @@
 #!/usr/bin/python3
+
 import sys
 import os
 import argparse
@@ -9,6 +10,8 @@ from importlib import import_module
 from models.utils import *
 from spinner import Spinner
 import logging
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve
 
 def float_range(mini,maxi):
     # Define the function with default arguments
@@ -176,6 +179,7 @@ def get_dir_list(dir_path):
 
 def run_models(dataset, dataset_file, model_type, selected_models_list, args):
     global all_results
+    global predict_results
     global models_path
     global logger
 
@@ -198,6 +202,7 @@ def run_models(dataset, dataset_file, model_type, selected_models_list, args):
                 r_df['model'] = model
                 r_df['dataset'] = dataset_file
                 all_results = pd.concat([all_results, r_df], ignore_index = True)
+                predict_results.append([c, p, model, dataset_file])
             else:
                 msg = colored('No ' + model.upper() + ' Results to Dataset ' + dataset_file + '.', 'yellow')
                 logger.warning(msg)
@@ -226,11 +231,13 @@ def graph_metrics(dataset_file, output_dir):
         metrics_dict[metric] = list(dataset_results[metric] * 100.0)
 
     df = pd.DataFrame(metrics_dict, index = models_index)
-    ax = df.plot.bar(rot = 0, edgecolor='white', linewidth=1)
+    df.columns = ['Accuracy', 'Precision', 'Recall', 'F1_Score', 'MCC']
+    ax = df.plot.bar(rot = 0, edgecolor='white', linewidth = 1)
     ax.set_xlabel('Models')
-    ax.set_ylabel('Values')
-    ax.legend(ncol = 3, loc = 'upper center')
+    ax.set_ylabel('Values (%)')
+    ax.legend(ncol = 1, loc = 'lower left')
     ax.set_ylim(0, 100)
+    ax.set_xlim(-1, len(models_index))
     ax.set_title('Metrics to ' + dataset_file)
     graph_file = 'gm_' + os.path.splitext(dataset_file.replace("/", "_"))[0] + '.pdf'
     path_graph_file = os.path.join(output_dir, graph_file)
@@ -244,19 +251,20 @@ def graph_class(dataset_file, output_dir):
     dataset_results = all_results[(all_results['dataset'] == dataset_file)]
     models_index = list(dataset_results['model'].str.upper())
     classification_dict = dict()
-    classification_list = ['tp', 'fp', 'tn', 'fn']
+    classification_list = ['TP', 'FP', 'TN', 'FN']
     for classification in classification_list:
-        classification_dict[classification] = list(dataset_results[classification])
+        classification_dict[classification] = list(dataset_results[classification.lower()])
 
     df = pd.DataFrame(classification_dict, index = models_index)
     stacked_data = df.apply(lambda x: x*100/sum(x), axis = 1)
     ax = stacked_data.plot.barh(rot = 0, stacked = True)
-    ax.set_xlabel('Values')
+    ax.set_xlabel('Values (%)')
     ax.set_ylabel('Models')
+    ax.set_ylim(-1, len(models_index))
     ax.legend(ncol = len(classification_list), loc = 'upper center')
     for container in ax.containers:
         if container.datavalues[0] > 1.0:
-            ax.bar_label(container, label_type = 'center', color = 'white', fmt = '%.2f')
+            ax.bar_label(container, label_type = 'center', color = 'black', weight='bold', fmt = '%.2f')
     ax.set_title('Classification to ' + dataset_file)
     graph_file = 'gc_' + os.path.splitext(dataset_file.replace("/", "_"))[0] + '.pdf'
     path_graph_file = os.path.join(output_dir, graph_file)
@@ -268,19 +276,12 @@ def graph_roc_auc(dataset_file, output_dir):
         return
 
     dataset_results = all_results[(all_results['dataset'] == dataset_file)]
-    roc_dict = dict()
     models_list = list(dataset_results['model'].str.upper())
-    roc_dict['model'] = models_list
     values_list = list(dataset_results['roc_auc'] * 100.0)
-    roc_dict['roc_auc'] = values_list
     markers = ['o', '^', 's', 'P', 'X', 'd', '*', 'x', '+', 'D', 'v']
-
-    df = pd.DataFrame(data = roc_dict);
-
-    import matplotlib.pyplot as plt
-
+    plt.clf()
     i = 0.0
-    for px, py, m in zip(df.model, df.roc_auc, markers):
+    for px, py, m in zip(models_list, values_list, markers):
         plt.scatter(px, py, marker = m, s = py)
         plt.annotate("{:.2f}".format(py), (i - 0.2, py - 6.0))
         i += 1.0
@@ -295,6 +296,29 @@ def graph_roc_auc(dataset_file, output_dir):
     path_graph_file = os.path.join(output_dir, graph_file)
     plt.savefig(path_graph_file)
 
+def graph_roc_curve(dataset_file, output_dir):
+    global roc_results
+    if roc_results.empty:
+        return
+    dataset_results = roc_results[(roc_results['dataset'] == dataset_file)]
+    models_list = set(dataset_results['model'])
+    plt.clf()
+    plt.plot([0, 1], [0, 1], color = 'black', linestyle='--')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC Curve to ' + dataset_file)
+
+    for m in models_list:
+        df = dataset_results[(dataset_results['model'] == m)]
+        fper = df['fper'].to_numpy()
+        tper = df['tper'].to_numpy()
+        plt.plot(fper, tper, label = m.upper())
+
+    plt.legend(loc = 'lower right')
+    graph_file = 'grc_' + os.path.splitext(dataset_file.replace("/", "_"))[0] + '.pdf'
+    path_graph_file = os.path.join(output_dir, graph_file)
+    plt.savefig(path_graph_file)
+
 if __name__=="__main__":
     logging.basicConfig(format = '%(name)s - %(levelname)s - %(message)s')
     global models_path
@@ -303,17 +327,21 @@ if __name__=="__main__":
     global models_output_files
     global logger
     global all_results
+    global predict_results
+    global roc_results
     logger = logging.getLogger('AutoCAR')
     models_path = 'models'
     models_type = get_dir_list(models_path)
     models_dict = get_models()
     all_results = pd.DataFrame()
+    roc_results = pd.DataFrame()
+    predict_results = list()
 
     global graphics_type
-    graphics_type = ['metrics', 'roc_auc', 'class']
+    graphics_type = ['metrics', 'roc_auc', 'class', 'roc_curve']
 
     args = parse_args(sys.argv[1:])
-    print(args)
+    #print(args)
 
     if args.verbose:
         logger.setLevel(logging.INFO)
@@ -342,6 +370,7 @@ if __name__=="__main__":
             exit(1)
 
         if args.use_balanced_datasets:
+            logger.info('Using Balanced Dataset')
             dataset = balanced_dataset(dataset)
 
         for model_type in models_type:
@@ -352,13 +381,29 @@ if __name__=="__main__":
                 selected_models_list = models_dict[model_type]
                 run_models(dataset, dataset_file, model_type, selected_models_list, args)
 
-        results_file_path = os.path.join(args.output_dir, "general_results.csv")
-        all_results.to_csv(results_file_path, index = False)
+        logger.info('Saving Result to %s' % dataset_file)
 
+        file_path = os.path.join(args.output_dir, 'general_results.csv')
+        all_results.to_csv(file_path, index = False)
+
+        for p in predict_results:
+            fper, tper, thresholds = roc_curve(p[0], p[1])
+            roc_df = pd.DataFrame()
+            roc_df['fper'] = fper
+            roc_df['tper'] = tper
+            roc_df['model'] = p[2]
+            roc_df['dataset'] = p[3]
+            roc_results = pd.concat([roc_results, roc_df], ignore_index = True)
+
+        file_path = os.path.join(args.output_dir,'roc_curve_results.csv')
+        roc_results.to_csv(file_path, index = False)
+
+        logger.info('Ploting Graphics to %s' % dataset_file)
         if args.plot_graph:
             for g in args.plot_graph:
                 (globals()['graph_' + g])(dataset_file, args.output_dir)
         else:
-            graph_metrics(dataset_file, args.output_dir)
             graph_class(dataset_file, args.output_dir)
+            graph_metrics(dataset_file, args.output_dir)
             graph_roc_auc(dataset_file, args.output_dir)
+            graph_roc_curve(dataset_file, args.output_dir)
