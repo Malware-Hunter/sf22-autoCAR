@@ -343,13 +343,13 @@ if __name__=="__main__":
     args = parse_args(sys.argv[1:])
     #print(args)
 
-    if args.verbose:
-        logger.setLevel(logging.INFO)
-
     if args.list_models:
         list_models(args.list_models)
     elif args.list_models_all:
         list_models(models_type)
+
+    if args.verbose:
+        logger.setLevel(logging.INFO)
 
     output_dir = args.output_dir
     if not output_dir.startswith('.'):

@@ -14,7 +14,14 @@ The tool has been tested in the following environments:
 
 ## How-To Install
 
-- Step 1: installing R (How to in [CRAN](https://cran.r-project.org/) - Last Acess 17/July/2022):
+- Step 1: Installing Java (Required to Compile R Packages):
+
+    ```sh
+    $ apt-get install openjdk-17-jdk -y
+    ```
+
+- Step 2: installing R (How to in [CRAN](https://cran.r-project.org/) - Last Acess 17/July/2022):
+
     ```sh
     $ apt-get update
     $ sudo apt install --no-install-recommends software-properties-common dirmngr
@@ -24,24 +31,46 @@ The tool has been tested in the following environments:
     $ sudo apt install --no-install-recommends r-base
     ```
 
-- Step 2: installing Python requirements:
+- Step 3: installing R package **arules** and **arulesCBA**
+
+  **Stable CRAN version:** Install from within R using the following command
+
+  ``` sh
+  $ Rscript --no-save -e 'install.packages("arules", repos="http://cran.r-project.org")'
+  $ Rscript --no-save -e 'install.packages("arulesCBA", repos="https://cran.rstudio.com")'  
+  ```
+
+  **(Alternative) arulesCBA Current development version:** Install From
+    [r-universe.](https://mhahsler.r-universe.dev/ui#package:arulesCBA)
+
+    ``` sh
+    $ Rscript --no-save -e 'install.packages("arulesCBA", repos = "https://mhahsler.r-universe.dev")'
+    ```
+
+- Step 4: installing Python requirements:
+
     ```sh
     $ pip install -r requirements.txt
     ```
 
-- Step 3: installing R package **arulesCBA**
+## Using Docker
 
-  **Stable CRAN version:** Install from within R using the following command
+- Step 1: Create Image
 
-    ``` r
-    install.packages("arulesCBA")
+    ```sh
+    $ docker build -t IMAGE_NAME .
     ```
 
-  **(alternative) Current development version:** Install From
-    [r-universe.](https://mhahsler.r-universe.dev/ui#package:arulesCBA)
+- Step 2: Run Container in Background
 
-    ``` r
-    install.packages("arulesCBA", repos = "https://mhahsler.r-universe.dev")
+    ```sh
+    $ docker run -d --name CONTAINER_NAME IMAGEM_NAME
+    ```
+
+- Step 3: Access Container Shell
+
+    ```sh
+    $ docker exec -it CONTAINER_NAME /bin/bash
     ```
 
 ## Usage examples
@@ -63,7 +92,7 @@ The tool has been tested in the following environments:
     $ autocar.py --list-models-all
     ```
 
-### Running 
+### Running
 
   - models **CBA** and **EQAR** for the **drebin215.csv** dataset with minimum support at 10% and rule quality **prec**
     ```sh
@@ -88,7 +117,7 @@ The tool has been tested in the following environments:
 ## How-To add new models
 
 To allow the easy and fast integration of new models to our tool, we use a structure of directories and files similar to the libraries used by **gcc** on Linux systems. For example, adding a new model requires just a new sub-directory within **models** directory and a default invocation file (i.e., **run.py**), whose function **run** must receive as input arguments the dataset and other parameters (e.g., prefix of the output files).
-In each sub-directory, **about.desc** files can be added to describes the new model for our tool. 
+In each sub-directory, **about.desc** files can be added to describes the new model for our tool.
 Once these minimum requirements are met, the new method or model is automatically available, as a new execution parameter, in our tool.
 
 Step-by-step example: let's assume we are adding a new **CBAR** model named **ARM**
@@ -115,7 +144,7 @@ Step-by-step example: let's assume we are adding a new **CBAR** model named **AR
       # ... ARM's calling code goes here ...
       return general_class, general_prediction
     ```
-  - Step 4: copy ARM's entire implementation 
+  - Step 4: copy ARM's entire implementation
     ```sh
     $ cp -ra path/ARM/src models/cbar/arm/
     ```
