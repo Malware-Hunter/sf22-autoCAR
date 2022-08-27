@@ -61,16 +61,10 @@ The tool has been tested in the following environments:
     $ docker build -t IMAGE_NAME .
     ```
 
-- Step 2: Run Container in Background
+- Step 2: Run Container and Access Container Shell
 
     ```sh
-    $ docker run -d --name CONTAINER_NAME IMAGEM_NAME
-    ```
-
-- Step 3: Access Container Shell
-
-    ```sh
-    $ docker exec -it CONTAINER_NAME /bin/bash
+    $ docker run -it IMAGEM_NAME /bin/bash
     ```
 
 ## Usage examples
