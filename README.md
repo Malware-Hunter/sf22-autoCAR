@@ -63,8 +63,14 @@ The tool has been tested in the following environments:
 
 - Step 2: Run Container and Access Container Shell
 
+  **Not Persistent**
     ```sh
     $ docker run -it IMAGEM_NAME /bin/bash
+    ```
+
+  **Persistent**
+    ```sh
+    $ docker run -v VOLUME_NAME:/sf22 -it IMAGEM_NAME /bin/bash
     ```
 
 ## Usage examples
